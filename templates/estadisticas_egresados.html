@@ -1,0 +1,74 @@
+
+<div class="container pt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Estadísticas de egresados</h4>
+        </div>
+
+        <div class="card-body">
+
+            <!-- FILTROS -->
+            <div class="row mb-4 justify-content-center">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Estatus de titulación</label>
+                    <select class="form-select" id="filtro_estatus">
+                        <option value="">Todos</option>
+                        <option value="Titulado">Titulado</option>
+                        <option value="No titulado">No titulado</option>
+                        <option value="En proceso">En proceso</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Carrera</label>
+                    <select class="form-select" id="filtro_carrera">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- GRÁFICA -->
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div style="height:300px;">
+                        <canvas id="graficaEgresados"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card shadow-sm">
+                        <div class="card-body" id="leyendaGrafica"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESUMEN / TARJETAS -->
+            <div class="row mt-4 justify-content-center" id="resumenEgresados"></div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Cambiar encabezado azul a verde */
+.card-header.bg-primary {
+    background-color: #7cb425 !important; /* verde */
+    border-color: #7cb425 !important;
+}
+
+/* Borde de la tarjeta principal */
+.container .card {
+    border: 1px solid #7cb425;
+}
+/* Oculta la columna derecha completa */
+.col-md-3:has(#leyendaGrafica) {
+    display: none;
+}
+
+/* Expande la gráfica para ocupar el centro */
+.col-md-8 {
+    margin: auto;
+}
+
+
+</style>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de egresados</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="shortcut icon" href="{{ url_for('static', filename='images/o.ico') }}" type="image/x-icon">
+</head>
+
+<body>
+<nav class="navbar navbar-expand-sm navbar-light bg-light">
+    <div class="container position-relative">
+        <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="{{ url_for('static', filename='images/o.ico') }}" alt="Logo UMB" class="logo-umb">
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#collapsibleNavId" aria-controls="collapsibleNavId" aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="collapsibleNavId">
+            <ul class="navbar-nav mx-auto">
+                <li>
+                    <h1 class="titnav">Universidad Mexiquense del Bicentenario</h1>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<header class="hero">
+    <div class="container-fluid text-center">
+<h1 class="hero-title">
+    Sistema de seguimiento de egresados
+</h1>
+
+<div class="hero-divider">
+</div>
+
+
+          <!-- BOTÓN INICIAR SESIÓN DIRECTO -->
+<button class="btn btn-hero mt-4" data-bs-toggle="modal" data-bs-target="#modalCoordinador">
+    Iniciar sesión →
+</button>
+
+        </div>
+    </div>
+</header>
+
+
+
+    <div class="modal fade" id="modalCoordinador" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login Coordinador</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="{{ url_for('login_admin') }}" method="post" id="loginCoordinador">
+                        <div class="mb-3">
+                            <label for="useradmin" class="form-label">Ingresa id de usuario</label>
+                            <input type="text" class="form-control" name="useradmin" id="useradmin"
+                                placeholder="Número de empleado" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password_coordi" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" name="password_coordi" id="password_coordi"
+                                placeholder="Contraseña" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" id="loginbtnadmin">Ingresar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+        
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
+    <script>
+        document.getElementById("loginbtnadmin").addEventListener("click", function () {
+            document.getElementById("loginCoordinador").submit();
+        });
+        document.getElementById("loginbtncontrol").addEventListener("click", function () {
+            document.getElementById("loginControl").submit();
+        });
+        document.getElementById("loginbtnhct").addEventListener("click", function () {
+            document.getElementById("loginHct").submit();
+        });
+        document.getElementById("loginbtnEgresado").addEventListener("click", function () {
+            document.getElementById("formEgresado").submit();
+        });
+    </script>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+
+        if (error === 'usuario') {
+            alert("Usuario incorrecto.");
+        } else if (error === 'contraseña') {
+            alert("Contraseña incorrecta.");
+        } else if (error === 'db') {
+            alert("No se pudo conectar a la base de datos.");
+        }
+    </script>
+    <!-- FOOTER DE PÁGINA -->
+<div class="page-footer-egresados">
+    <div class="footer-card-egresados">
+        <div class="footer-line">
+            <i class="bi bi-mortarboard-fill"></i>
+            <strong>Sistema de seguimiento de egresados © 2026</strong>
+        </div>
+
+        <div class="footer-line">
+            <i class="bi bi-shield-lock-fill"></i>
+            Acceso para administrador
+        </div>
+
+        <div class="footer-line">
+            <i class="bi bi-clock-history"></i>
+            Plataforma institucional de la Universidad Mexiquense del Bicentenario
+        </div>
+
+        <div class="footer-line footer-small">
+            <i class="bi bi-envelope-fill"></i>
+            soporte@institucion.edu.mx
+        </div>
+    </div>
+</div>
+
+</body>
+
+</html>
+<style>
+    :root {
+  --verde-principal: #52f731;
+  --verde-overlay: ##d8ecd8;
+  --verde-claro: #c5e3c6;
+}
+
+/* NAVBAR estilo flotante */
+/* NAVBAR más alto */
+.navbar {
+  background: rgba(16, 13, 13, 0.85) !important;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  min-height: 100px;        /* altura mínima del navbar */
+  padding: 1rem 2rem;       /* espacio interno vertical y horizontal */
+  position: relative;
+}
+
+/* Centrar título verticalmente */
+.titnav {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    text-align: center;
+    font-size: clamp(1rem, 2.5vw, 1.8rem); /* tamaño mínimo, preferido y máximo */
+    white-space: nowrap; /* evita que se rompa en varias líneas */
+    overflow: hidden;
+    text-overflow: ellipsis; /* agrega "..." si se sale */
+}
+
+
+/* Ajuste para el logo si lo tienes */
+.logo-umb {
+  height: 80px;            /* más alto si quieres que crezca con el navbar */
+  width: auto;
+}
+
+
+.navbar-brand {
+  font-weight: bold;
+  color: var(--verde-principal) !important;
+}
+
+.navbar .nav-link {
+  color: #1f2937 !important;
+  font-weight: 500;
+}
+.titnav{
+    color: var(--verde-principal);
+    font-weight: bold;
+}
+
+/* HERO */
+.hero {
+  min-height: 95vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background:
+    linear-gradient(var(--verde-overlay), var(--verde-overlay)),
+    url("/static/img/fondo_umb.jpg") center / cover no-repeat;
+  color: white;
+}
+
+/* CONTENIDO HERO */
+.hero-content {
+  padding-top: 120px;
+  max-width: 900px;
+}
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3rem, 6vw, 6rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 30px;
+  text-align: center;       /* siempre centrado */
+  white-space: normal;      /* permite que el texto se envuelva si hace falta */
+  overflow-wrap: normal;    /* evita saltos de línea innecesarios */
+
+}
+
+/* Línea decorativa */
+.hero-divider {
+  border-left: 4px solid var(--verde-claro);
+  padding-left: 20px;
+  margin-bottom: 40px;
+}
+
+.hero-university {
+  font-size: 1.3rem;
+  font-weight: 500;
+  color: var(--verde-claro);
+}
+
+.hero-unit {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+/* BOTÓN HERO */
+.btn-hero {
+  background-color: var(--verde-principal);
+  color: rgb(12, 12, 12);
+  padding: 16px 40px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 12px;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-hero:hover {
+  background-color: #1f4d22;
+  transform: translateY(-2px);
+}.logo-umb {
+    width: 85px;        /* ← AQUI controlas el tamaño */
+    height: auto;
+    object-fit: contain;
+}
+
+/* Navbar más pegado a la izquierda */
+.navbar .container {
+    justify-content: flex-start;
+}
+
+@media (max-width: 768px) {
+    .titnav {
+        display: none;
+    }
+
+    .logo-umb {
+        width: 70px;
+    }
+}
+/* ===== FORZAR LOGO A LA IZQUIERDA (SIN TOCAR HTML) ===== */
+
+/* Quita el centrado del container del navbar */
+.navbar .container {
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 25px !important;
+    padding-right: 25px !important;
+}
+
+/* Alinea todo el contenido del navbar a la izquierda */
+.navbar .navbar-collapse {
+    justify-content: flex-start !important;
+}
+
+
+
+/* Logo bien pegado */
+.navbar-brand,
+.logo-umb {
+    margin-left: 0 !important;
+}
+/* ===== CENTRAR TEXTO DEL NAVBAR SIN MOVER EL LOGO ===== */
+
+/* Referencia para posicionar el texto */
+.navbar {
+    position: relative;
+}
+
+/* Texto centrado absoluto */
+.titnav {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    white-space: wrap;
+    text-align: center;
+
+}
+
+
+
+/* LOGIN COORDINADOR MODAL */
+#modalCoordinador .modal-content {
+    background: #111; /* fondo oscuro */
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    border: 2px solid var(--verde-principal);
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+#modalCoordinador .modal-header {
+    border-bottom: 2px solid var(--verde-principal);
+    justify-content: center;
+}
+
+#modalCoordinador .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--verde-principal);
+    text-align: center;
+}
+
+#modalCoordinador .modal-body label {
+    font-weight: 500;
+    color: var(--verde-claro);
+}
+
+#modalCoordinador .form-control {
+    border-radius: 10px;
+    border: 1px solid var(--verde-claro);
+    background-color: #222;
+    color: white;
+    padding: 10px;
+}
+
+#modalCoordinador .form-control::placeholder {
+    color: #999;
+}
+
+#modalCoordinador .btn-primary {
+    background-color: var(--verde-principal);
+    border: none;
+    font-weight: bold;
+    border-radius: 10px;
+    padding: 10px 25px;
+    transition: all 0.3s ease;
+    color: #000;
+}
+
+#modalCoordinador .btn-primary:hover {
+    background-color: #1f4d22;
+    transform: translateY(-2px);
+    color: #fff;
+}
+
+#modalCoordinador .btn-secondary {
+    background-color: #333;
+    border: 1px solid var(--verde-principal);
+    color: var(--verde-principal);
+    font-weight: 500;
+    border-radius: 10px;
+}
+
+#modalCoordinador .btn-secondary:hover {
+    background-color: #222;
+    color: var(--verde-claro);
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 2.2rem;  /* tamaño fijo para tablets y móviles */
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 1.8rem;  /* más pequeño en móviles muy pequeños */
+    padding: 0 10px;     /* un poco de espacio lateral */
+  }
+}
+/* ===== FOOTER INSTITUCIONAL ===== */
+.page-footer-egresados {
+    background: #0f0f0f;              /* fondo oscuro para separar del hero */
+    padding: 100px 40px 60px;
+    display: flex;
+    justify-content: center;
+}
+
+.footer-card-egresados {
+    background: #ffffff;
+    max-width: 1200px;
+    width: 100%;
+    padding: 36px 30px;
+    border-radius: 22px;
+    text-align: center;
+    color: #374151;
+    box-shadow: 0 15px 35px rgba(0,0,0,.25);
+    border: 2px solid var(--verde-principal);
+    font-family: 'Playfair Display', serif;
+}
+
+/* Líneas del footer */
+.footer-line {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-size: 1rem;
+}
+
+/* Texto pequeño */
+.footer-small {
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+/* Iconos */
+.footer-card-egresados i {
+    color: var(--verde-principal);
+    font-size: 1.2rem;
+}
+@media (max-width: 576px) {
+    .footer-card-egresados {
+        padding: 26px 18px;
+    }
+
+    .footer-line {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+</style>

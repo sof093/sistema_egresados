@@ -1,0 +1,514 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/crud.css') }}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<link rel="stylesheet"
+href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+<div class="card" style="margin-top: 120px;">
+    <div class="card-header text-center">
+        <h3>Egresados registrados</h3>
+        
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalregistroegresado">+ Nuevo registro</button>
+    </div>
+    <div class="card-body">
+
+ {% if egresados %}
+ <div class="table-responsive">
+<table class="table egresados-table nowrap" id="egresadostable">
+
+    <thead class="table-dark">
+        <tr>
+            <th class="text-center">Nombre</th>
+            <th class="text-center">Estatus Titulación</th>
+            <th class="text-center">Fotografía</th>
+            <th class="text-center">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for egresado in egresados %}
+        <tr>
+            <td class="text-center fw-semibold">
+                {{ egresado.nombre_egresado }} {{ egresado.apellido_paterno }} {{ egresado.apellido_materno }}
+            </td>
+
+
+<td class="text-center
+    {% if egresado.estatus_titulacion|lower == 'titulado' %} bg-success text-white
+    {% elif egresado.estatus_titulacion|lower == 'no titulado' %} bg-danger text-white
+    {% elif egresado.estatus_titulacion|lower == 'en proceso' %} bg-warning text-dark
+    {% endif %}">
+    
+    <div>{{ egresado.estatus_titulacion }}</div>
+
+    {% set anio_actual = 2026 %}
+
+    {% if egresado.estatus_titulacion|lower != 'titulado' %}
+        {% if egresado.generacion 
+              and '-' in egresado.generacion
+              and egresado.generacion.split('-')|length == 2 %}
+            
+            {% set partes = egresado.generacion.split('-') %}
+            {% set anio_egreso = partes[1]|int %}
+            {% set anio_limite = anio_egreso + 10 %}
+            {% set anios_restantes = anio_limite - anio_actual %}
+
+            {% if anios_restantes > 0 %}
+                <small class="d-block mt-1">
+                    Restan {{ anios_restantes }} año{{ 's' if anios_restantes > 1 else '' }} para titularse
+                </small>
+            {% else %}
+                <small class="d-block mt-1 text-danger">
+                    Fuera de tiempo (límite: {{ anio_limite }})
+                </small>
+            {% endif %}
+
+        {% else %}
+            <small class="d-block mt-1 text-dark">Generación inválida</small>
+        {% endif %}
+    {% endif %}
+</td>
+
+
+            <td class="text-center">
+                {% if egresado.fotografia %}
+                    <img id="foto_egresado" src="{{ url_for('static', filename=egresado.fotografia) }}">
+                {% else %}
+                    <img id="foto_egresado" src="{{ url_for('static', filename='images/user.png') }}">
+                {% endif %}
+            </td>
+
+           <td class="text-center">
+
+    <!-- ACTUALIZAR -->
+    <button class="btn btn-action btn-edit btnActualizar"
+            data-id="{{ egresado.id_egresado }}"
+            data-bs-toggle="modal"
+            data-bs-target="#modalactualizaregresado"
+            title="Actualizar">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/>
+            <path d="M20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/>
+        </svg>
+    </button>
+
+    <!-- ELIMINAR -->
+    <button class="btn btn-action btn-delete btnEliminar"
+            data-id="{{ egresado.id_egresado }}"
+            data-nombre="{{ egresado.nombre_egresado }}"
+            title="Eliminar">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12z"/>
+            <path d="M8 7V5h8v2h5v2H3V7h5z"/>
+        </svg>
+    </button>
+
+    <!-- VER DETALLES -->
+    <button class="btn btn-action btn-view btnDetalles"
+            data-id="{{ egresado.id_egresado }}"
+            data-bs-toggle="modal"
+            data-bs-target="#modalDetallesEgresado"
+            title="Ver detalles">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 5c-7.633 0-10 6.5-10 6.5S4.367 18 12 18s10-6.5 10-6.5S19.633 5 12 5zm0 11a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/>
+            <circle cx="12" cy="11.5" r="2.5"/>
+        </svg>
+    </button>
+
+</td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="card-footer text-muted">No hay registros</p>
+{% endif %}
+
+
+    </div>
+    
+<!-- FOOTER DE PÁGINA -->
+
+
+
+
+
+
+{% include "formulario_actualizacion_egresado.html" %}
+<script>
+    
+function initTablaEgresados() {
+    // Destruir tabla si ya existe, pero conservar los elementos visibles
+    if ($.fn.DataTable.isDataTable('#egresadostable')) {
+        $('#egresadostable').DataTable().clear().destroy();
+    }
+    $('#egresadostable').DataTable({
+    dom: '<"dt-top d-flex flex-wrap justify-content-between align-items-center mb-3"l f>tip',
+    responsive: {
+        details: {
+            type: 'column',
+            target: 'tr'
+        }
+    },
+    columnDefs: [
+        { responsivePriority: 1, targets: 0 }, // Nombre
+        { responsivePriority: 2, targets: 3 }, // Acciones
+        { responsivePriority: 3, targets: 1 }, // Estatus
+        { responsivePriority: 4, targets: 2 }  // Foto
+    ],
+    autoWidth: false,
+    paging: true,
+    searching: true,
+    ordering: true,
+    lengthMenu: [[3, 5, 10], [3, 5, 10]],
+    language: {
+        lengthMenu: "MOSTRAR _MENU_ REGISTROS",
+        search: "BUSCAR:",
+        info: "PÁGINA _PAGE_ DE _PAGES_",
+        zeroRecords: "SIN RESULTADOS",
+        paginate: {
+            next: ">",
+            previous: "<"
+        }
+    }
+});
+
+    $('#egresadostable_filter input')
+        .attr('placeholder', '🔍 Ingresa el nombre del egresado');
+}
+
+// Llamar la función cuando cargues la sección
+$(document).ready(function () {
+    initTablaEgresados();
+});
+
+</script>
+<script>
+$(document).on("click", ".btnActualizar", async function () {
+    let id = $(this).data("id");
+
+    try {
+        const res = await fetch("/obtener_egresado/" + id);
+        const data = await res.json();
+        $("#id_egresado").val(data.id_egresado);
+        $("#nombre_egresado_ac").val(data.nombre_egresado);
+        $("#apellido_paterno_ac").val(data.apellido_paterno);
+        $("#apellido_materno_ac").val(data.apellido_materno);
+        $("#genero_ac").val(data.genero);
+        $("#telefono_ac").val(data.telefono);
+        $("#coorreo_electronico_ac").val(data.coorreo_electronico);
+        $("#ni_ac").val(data.ni);
+        $("#ne_ac").val(data.ne);
+        $("#estatus_laboral_ac").val(data.estatus_laboral).change();
+         $("#perfil_ac").val(data.perfil);
+        $("#estatus_titulacion_ac").val(data.estatus_titulacion).change();
+        $("#modalidad_ac").val(data.modalidad).change();
+        $("#matricula_ac").val(data.matricula);
+        $("#generacion_ac").val(data.generacion);
+        $("#password_ac").val(data.password);
+       
+
+        // ✅ --- Ahora cargar selects en el orden correcto --- ✅
+
+        // 1️⃣ Carreras
+        const r1 = await fetch("/consulta_carrera");
+        const carreras = await r1.json();
+        $("#id_carrera_ac").html('<option value="">Seleccione una carrera</option>');
+        carreras.forEach(c => {
+            $("#id_carrera_ac").append(`<option value="${c.id_carrera}">${c.nombre_carrera}</option>`);
+        });
+        $("#id_carrera_ac").val(data.id_carrera).change();
+
+        // 2️⃣ UES
+        const r2 = await fetch("/consulta_ues");
+        const ues = await r2.json();
+        $("#id_ues_ac").html('<option value="">Seleccione una UES</option>');
+        ues.forEach(u => {
+            $("#id_ues_ac").append(`<option value="${u.id_ues}">${u.nombre_ues}</option>`);
+        });
+        $("#id_ues_ac").val(data.id_ues).change();
+
+        // 3️⃣ Municipios
+        const r3 = await fetch("/consulta_municipio");
+        const municipios = await r3.json();
+        $("#id_municipio_ac").html('<option value="">Seleccione un municipio</option>');
+        municipios.forEach(m => {
+            $("#id_municipio_ac").append(`<option value="${m.id_municipio}">${m.nombre_municipio}</option>`);
+        });
+        $("#id_municipio_ac").val(data.id_municipio).change();
+
+        // 4️⃣ Localidades (depende del municipio)
+        const r4 = await fetch("/consulta_localidades/" + data.id_municipio);
+        const localidades = await r4.json();
+        $("#id_localidad_ac").prop("disabled", false); // ✅ Habilitar
+        $("#id_localidad_ac").html('<option value="">Seleccione una localidad</option>');
+        localidades.forEach(l => {
+            $("#id_localidad_ac").append(`<option value="${l.id_localidad}">${l.nombre_localidad}</option>`);
+        });
+        $("#id_localidad_ac").val(data.id_localidad).change();
+        if (data.fotografia) {
+                $("#previewegr_ac").attr("src", "/static/" + data.fotografia);
+            }
+
+        // ✅ Mostrar modal hasta el final, ya precargado
+        $("#modalactualizaregresado").modal("show");
+
+    } catch (error) {
+        alert("Error al cargar egresado: " + error);
+        console.error(error);
+    }
+});
+
+
+</script>
+<div class="modal fade" id="modalEliminarEgresado" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Confirmar eliminación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p>¿Estás segura de eliminar al egresado?</p>
+        <h5 class="text-danger fw-bold" id="nombreEgresadoEliminar"></h5>
+        <p class="mt-2">Esta acción no se puede deshacer.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmarEliminar">Eliminar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+                
+
+<script>
+
+$(document).on("click", ".btnEliminar", function () {
+    const id = $(this).data("id");
+    const nombre = $(this).data("nombre");
+
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: `Vas a eliminar a: ${nombre}. ¡Esta acción no se puede deshacer!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append("id_egresado", id);
+
+            fetch("/eliminar_egresado", {
+                method: "POST",
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Eliminado!',
+                        text: 'Egresado borrado con éxito.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        $("#consultar_egresados").click();
+                    });
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            });
+        }
+    });
+});
+
+// Cuando confirman la eliminación
+// Confirmar eliminación
+$(document).on("click", "#btnConfirmarEliminar", function () {
+
+    const idEliminar = $(this).attr("data-id");
+
+    const formData = new FormData();
+    formData.append("id_egresado", idEliminar);
+
+    fetch("/eliminar_egresado", {
+        method: "POST",
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+
+            alert("Egresado eliminado correctamente.");
+
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(
+                document.getElementById("modalEliminarEgresado")
+            );
+            modal.hide();
+
+            // 🔥 ELIMINAR EL BACKDROP
+            document.querySelectorAll(".modal-backdrop").forEach(el => el.remove());
+            document.body.classList.remove("modal-open");
+            document.body.style = "";
+
+            // Recargar tabla
+            $("#consultar_egresados").click();
+
+        } else {
+            alert("Error al eliminar: " + data.message);
+        }
+    })
+    .catch(err => alert("Error: " + err));
+});
+
+
+</script>
+
+<!-- ============================
+  MODAL DETALLES EGRESADO
+============================= -->
+<div class="modal fade" id="modalDetallesEgresado" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered"> <div class="modal-content">
+      
+      <div class="modal-header" style="background-color: var(--verde-oscuro); color: white; border-bottom: 2px solid rgba(0,0,0,0.1);">
+    <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalles del egresado</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+</div>
+
+      <div class="modal-body">
+        <h4 id="nombreDetalle" class="text-center fw-bold mb-3"></h4>
+
+        <div class="text-center mb-4">
+          <img id="fotoDetalle" src="" class="img-thumbnail shadow-sm" style="max-width:180px; border-radius: 15px;">
+        </div>
+
+        <div class="row px-3">
+          <div class="col-md-4 mb-3">
+            <h6 class="text-primary border-bottom pb-2"><i class="bi bi-person-fill"></i> Personal</h6>
+            <p class="mb-1"><b>Género:</b> <span id="generoDetalle"></span></p>
+            <p class="mb-1"><b>Teléfono:</b> <span id="telDetalle"></span></p>
+            <p class="mb-1"><b>Correo:</b> <span id="correoDetalle"></span></p>
+            <p class="mb-1"><b>Municipio:</b> <span id="muniDetalle"></span></p>
+            <p class="mb-1"><b>Localidad:</b> <span id="locDetalle"></span></p>
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <h6 class="text-primary border-bottom pb-2"><i class="bi bi-mortarboard-fill"></i> Académica</h6>
+            <p class="mb-1"><b>Matrícula:</b> <span id="matriculaDetalle"></span></p>
+            <p class="mb-1"><b>Unidad (UES):</b> <span id="uesDetalle"></span></p>
+            <p class="mb-1"><b>Carrera:</b> <span id="carreraDetalle"></span></p>
+            <p class="mb-1"><b>Generación:</b> <span id="generacionDetalle"></span></p>
+            <p class="mb-1"><b>Modalidad:</b> <span id="modalidadDetalle"></span></p>
+            <p class="mb-1"><b>Estatus:</b> <span id="titulacionDetalle"></span></p>
+          </div>
+
+          <div class="col-md-4 mb-3">
+            <h6 class="text-primary border-bottom pb-2"><i class="bi bi-briefcase-fill"></i> Laboral</h6>
+            <p class="mb-1"><b>Estatus:</b> <span id="laboralDetalle"></span></p>
+            <p class="mb-1"><b>Perfil:</b> <br><small id="perfilDetalle" class="text-muted"></small></p>
+          </div>
+        </div>
+
+        <hr>
+        <div id="archivoDetalleArea" class="mt-3 text-center"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+  SCRIPT DETALLES
+============================= -->
+<script>
+    $(document).on("click", ".btnDetalles", async function () {
+    const id = $(this).data("id");
+
+    try {
+        const res = await fetch("/obtener_egresado/" + id);
+        const data = await res.json();
+
+        // Nombres y Foto
+        $("#nombreDetalle").text(`${data.nombre_egresado} ${data.apellido_paterno} ${data.apellido_materno}`);
+        $("#fotoDetalle").attr("src", data.fotografia ? "/static/" + data.fotografia : "/static/images/user.png");
+
+        /* ===== INFORMACIÓN PERSONAL ===== */
+        $("#generoDetalle").text(data.genero || "No especificado");
+        $("#telDetalle").text(data.telefono || "Sin teléfono");
+        $("#correoDetalle").text(data.coorreo_electronico || "Sin correo");
+        // Si el backend envía el nombre de la localidad/municipio úsalo, si no usa el ID
+        $("#muniDetalle").text(data.nombre_municipio || data.id_municipio || "No registrado");
+        $("#locDetalle").text(data.nombre_localidad || data.id_localidad || "No registrado");
+
+        /* ===== INFORMACIÓN ACADÉMICA ===== */
+        $("#matriculaDetalle").text(data.matricula || "N/A");
+        $("#uesDetalle").text(data.nombre_ues || data.id_ues || "No registrada");
+        $("#carreraDetalle").text(data.nombre_carrera || data.id_carrera || "No registrada");
+        $("#generacionDetalle").text(data.generacion || "N/A");
+        $("#modalidadDetalle").text(data.modalidad || "N/A");
+        $("#titulacionDetalle").text(data.estatus_titulacion || "N/A");
+
+        /* ===== INFORMACIÓN LABORAL ===== */
+        $("#laboralDetalle").text(data.estatus_laboral || "No registrado");
+        $("#perfilDetalle").text(data.perfil || "Sin descripción de perfil disponible.");
+
+        /* ===== VISUALIZACIÓN DE DOCUMENTOS ===== */
+        $("#archivoDetalleArea").empty();
+        if (data.documentos && data.documentos.trim() !== "") {
+            const ruta = "/static/" + data.documentos;
+            const ext = data.documentos.split('.').pop().toLowerCase();
+
+            // Verificamos si es PDF para incrustar o descargar
+            if (ext === "pdf") {
+                $("#archivoDetalleArea").html(`
+                    <h6 class="mb-3 text-secondary">Documento de Acreditación (PDF)</h6>
+                    <iframe src="${ruta}" width="100%" height="450px" style="border-radius:10px; border:1px solid #ddd;"></iframe>
+                `);
+            } else {
+                $("#archivoDetalleArea").html(`
+                    <div class="alert alert-light border">
+                        <i class="bi bi-file-earmark-arrow-down fs-4"></i><br>
+                        <a class="btn btn-outline-primary mt-2" href="${ruta}" target="_blank">Descargar documento adjunto</a>
+                    </div>
+                `);
+            }
+        } else {
+            $("#archivoDetalleArea").html('<p class="text-muted"><i class="bi bi-info-circle"></i> Este egresado no ha subido documentos de titulación.</p>');
+        }
+
+        $("#modalDetallesEgresado").modal("show");
+
+    } catch (error) {
+        console.error("Error:", error);
+        Swal.fire("Error", "No se pudo obtener la información del egresado.", "error");
+    }
+});
+</script>
+
+<style>
+/* Forzar que se muestre el select de registros de DataTables */
+.dataTables_length {
+    display: block !important;
+}
+</style>
+

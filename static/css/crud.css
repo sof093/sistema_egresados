@@ -1,0 +1,411 @@
+:root {
+    --verde-principal: #000000;
+    --verde-oscuro: #7cb425;
+    --gris: #ffffff;
+    --vino: #800000;
+    --negro: #f9f4f4;
+    --negroo: #000000;
+    --gris-claro: #0e0d0d;
+    --blanco: #000000;
+    --blancoo: #ffffff;
+}
+
+/* Estilo general del body */
+body {
+    background-color: var(--gris-claro);
+    color: var(--negro);
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+/* CARD principal */
+.card {
+    background-color: var(--negro);
+    color: var(--blanco);
+    border-radius: 12px;
+    margin-top: 80px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* HEADER de card */
+.card-header {
+    background-color: var(--gris);
+    color: var(--blanco);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 10px 10px 0 0;
+}
+
+.card-header h3 {
+    margin: 0;
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    color: #000000;
+}
+
+.card-header .btn {
+    font-size: 0.9rem;
+}
+.card-header .btn-success {
+    background-color: #015645;
+    border-radius: 10px;
+    padding: 8px 14px;
+}
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+thead {
+    background-color: var(--verde-principal);
+}
+
+thead th {
+    color: white;
+    font-size: .75rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: 14px;
+}
+
+tbody tr {
+    background-color: white;
+    border-bottom: 1px solid var(--gris-borde);
+}
+
+tbody tr:hover {
+    background-color: var(--verde-claro);
+}
+
+/* FOOTER de card */
+.card-footer {
+    background-color: var(--gris);
+    color: var(--blanco);
+    text-align: center;
+    border-radius: 0 0 10px 10px;
+}
+
+/* Tabla */
+table {
+    width: 100%;
+    margin-top: 15px;
+}
+
+table.dataTable {
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+
+
+thead {
+    background-color: var(--vino);
+    color: var(--blanco);
+}
+
+tbody tr:nth-child(even) {
+    background-color: #2a2a2a;
+}
+
+tbody tr:hover {
+    background-color: var(--verde-oscuro);
+    color: var(--blanco);
+}
+
+/* Botones */
+.btn-success { background-color: var(--verde-principal); border: none; }
+.btn-success:hover { background-color: #038a27; }
+
+.btn-info { background-color: var(--verde-oscuro); border: none; }
+.btn-info:hover { background-color: #1b3b1e; }
+
+.btn-danger { background-color: var(--vino); border: none; }
+.btn-danger:hover { background-color: #5a0000; }
+
+.btn-primary { background-color: var(--verde-principal); border: none; }
+.btn-primary:hover { background-color: #3fa620; }
+
+.btn-secondary { background-color: #555; border: none; }
+.btn-secondary:hover { background-color: #333; }
+
+/* Imágenes de egresados */
+#foto_egresado {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid var(--verde-principal);
+}
+
+/* Badges */
+.badge {
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+}
+
+/* Modales */
+.modal-content {
+    background-color: var(--negro);
+    color: var(--blanco);
+    border-radius: 12px;
+}
+
+.modal-header {
+    background-color: var(--verde-oscuro);
+    color: var(--blanco);
+}
+
+.modal-footer {
+    background-color: var(--verde-oscuro);
+    color: var(--blanco);
+}
+/* Barra superior DataTables */
+.dt-top {
+    background-color: var(--blancoo);
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(255, 255, 255, 0.05);
+}
+
+/* Texto "Mostrar X registros" */
+.dataTables_length label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--gris-texto);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+/* Select */
+.dataTables_length select {
+    border-radius: 10px;
+    border: 1px solid var(--gris-borde);
+    padding: 4px 8px;
+    margin-left: 6px;
+}
+
+/* Texto buscar */
+.dataTables_filter label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--gris-texto);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+/* Input buscar */
+.dataTables_filter input {
+    border-radius: 10px;
+    border: 1px solid var(--gris-borde);
+    padding: 6px 10px;
+    margin-left: 6px;
+}
+table.dataTable {
+    margin-top: 10px !important;
+}
+/* ===== FOOTER DE PÁGINA (separado del DataTable) ===== */
+.page-footer-egresados {
+    margin-top: 120px;          /* 🔥 separación REAL de la tabla */
+    padding-bottom: 60px;       /* aire inferior */
+    display: flex;
+    justify-content: center;
+}
+
+/* Tarjeta del footer */
+.footer-card-egresados {
+    background: #ffffff;
+    max-width: 2000px;           /* no ocupa todo el ancho */
+    width: 90%;
+    padding: 28px 24px;
+    border-radius: 16px;
+    text-align: center;
+    color: #6b7280;
+    box-shadow: 0 8px 20px rgba(0,0,0,.08);
+    border: 1px solid #e5e7eb;
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+.dataTables_wrapper {
+    margin-bottom: 80px;
+}
+.footer-card-egresados i {
+    margin-right: 8px;
+    color: #7cb425; /* tu verde institucional */
+    font-size: 1.1rem;
+}
+
+.footer-line {
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.footer-small {
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+    .dt-top {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .dataTables_filter,
+    .dataTables_length {
+        text-align: left;
+    }
+}
+table.dataTable thead th {
+    position: relative;
+    padding-right: 20px;
+}
+
+.egresados-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+/* Encabezado */
+.egresados-table thead th {
+    background: #111827;
+    color: #ffffff;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 2px solid #374151;
+    padding: 14px;
+}
+
+/* Filas */
+.egresados-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.egresados-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+/* Celdas */
+.egresados-table td {
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+/* Última fila sin borde */
+.egresados-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.dataTables_wrapper {
+    margin-top: 25px;
+}
+
+.dataTables_filter input {
+    width: 230px;   /* ajusta a tu gusto */
+}
+
+.dataTables_scroll {
+    border-radius: 14px;
+}
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.btn-info {
+    background: #0ea5e9;
+    border: none;
+}
+
+.btn-danger {
+    background: #ef4444;
+    border: none;
+}
+
+.btn-primary {
+    background: #6366f1;
+    border: none;
+}
+/* Botones de acciones */
+.btn-action {
+    background: transparent;
+    border: none;
+    padding: 6px;
+    margin: 0 4px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+/* Colores */
+.btn-edit {
+    color: #2563eb; /* azul */
+}
+
+.btn-delete {
+    color: #dc2626; /* rojo */
+}
+
+.btn-view {
+    color: #16a34a; /* verde */
+}
+
+/* Hover */
+.btn-action:hover {
+    background: rgba(0,0,0,0.05);
+    transform: scale(1.1);
+}
+
+/* Active */
+.btn-action:active {
+    transform: scale(0.95);
+}
+
+/* Alinear iconos */
+.btn-action svg {
+    display: block;
+}
+.toast-success {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+
+.toast-info {
+    background: linear-gradient(135deg, #0ea5e9, #0369a1);
+}
+
+.toast {
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    font-weight: 500;
+}
+
+/* Responsivo */
+@media (max-width: 1200px) {
+    table th, table td { font-size: 0.9rem; padding: 8px; }
+}
+
+@media (max-width: 768px) {
+    .card-header h3 { font-size: 1.2rem; }
+    #foto_egresado { width: 50px; height: 50px; }
+    table th, table td { font-size: 0.8rem; padding: 6px; }
+}
+
+@media (max-width: 480px) {
+    .card { margin-top: 50px; padding: 15px; }
+    .card-header h3 { font-size: 1rem; }
+    #foto_egresado { width: 40px; height: 40px; }
+    .btn { font-size: 0.75rem; padding: 5px 8px; }
+}

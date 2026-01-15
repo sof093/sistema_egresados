@@ -1,0 +1,75 @@
+<!-- Modal trigger button -->
+<button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalId">
+    Launch
+</button>
+
+
+<div class="modal fade" id="modalcoordinador" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" role="dialog"
+    aria-labelledby="modalTitleId" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitleId">
+                    Formulario para registro del administrador
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <form action="" method="post" id="form_registro_admin" enctype="multipart/form-data">
+                        <div class="form_group">
+                            <label for="nombre_coordinador">nombre_coordinador</label>
+                            <input type="text" class="form-control" name="nombre_coordinador" id="nombre_coordinador"
+                                aria-describedby="helpId" placeholder="Nombre completo del coordinador">
+                        </div>      
+
+                        <div class="form_group">
+                            <label for="apellido_paterno">apellido paterno</label>
+                            <input type="text" name="apellido_paterno" id="apellido_paterno" class="form-control" name="apellido_paterno" id="apellido_paterno"
+                                aria-describedby="helpId" placeholder="Apellido paterno del coordinador">
+                        </div>
+
+                        <div class="form_group">
+                            <label for="apellido_materno">apellido_materno</label>
+                            <input type="text" class="form-control" name="apellido_materno" id="apellido_materno"
+                                aria-describedby="helpId" placeholder="Apellido materno del coordinador">
+                        </div>
+
+                        <div class="form_group">
+                            <label for="numero_empleado">numero de empleado</label>
+                            <input type="text" class="form-control" name="numero_empleado" id="numero_empleado"
+                                aria-describedby="helpId" placeholder="Número de empleado del coordinador">
+                        </div>
+
+                        <div class="form_group">
+                            <label for="password">Contraseña</label>
+                            <input type="text" class="form-control"  name="password_coordinador" id="password_coordinador"
+                                aria-describedby="helpId" placeholder="Contraseña del coordinador">
+                        </div>
+                        <div class="form_group">
+                            <label for="ues">Selecciona unidad de estudios superiores</label>
+                            <select class="form-select" name="ues" id="ues">
+                                <option selected>--Selecciona una ues--</option>
+                                <option value="1">UMB San José del Rincón</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+                <button type="button" class="btn btn-primary">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Optional: Place to the bottom of scripts -->
+<script>
+    const myModal = new bootstrap.Modal(
+        document.getElementById("modalId"),
+        options,
+    );
+</script>

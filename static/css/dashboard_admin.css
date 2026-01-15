@@ -1,0 +1,716 @@
+:root {
+    --verde-umb: #59b616;
+    --verde-oscuro: #245530;
+    --fondo: #f5f7f9;
+}
+
+body {
+    margin: 0;
+   background: linear-gradient(180deg, #d8ecd8 0%, #c5e3c6 100%);
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+.sidebar-header {
+    margin-bottom: 30px;
+}
+
+.sidebar-header .logo {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.sidebar-header small {
+    display: block;
+    opacity: 0.8;
+}
+
+.menu {
+    list-style: none;
+    padding: 0;
+}
+
+.menu li {
+    padding: 12px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 5px;
+}
+
+.menu li i {
+    margin-right: 10px;
+}
+
+.menu li:hover,
+.menu li.active {
+    background: var(--verde-oscuro);
+}
+
+/* MAIN */
+.main-content {
+    flex: 1;
+    padding: 20px 30px;
+}
+
+/* TOPBAR */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar {
+    width: 38px;
+    height: 38px;
+    background: #8b0000;
+    color: white;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: bold;
+}
+
+/* WELCOME CARD */
+.welcome-card {
+    background: linear-gradient(
+        rgba(0,0,0,0.45),
+        rgba(0,0,0,0.45)
+    ),
+    url("/static/img/campus.jpg") center/cover no-repeat;
+
+    color: white;
+    padding: 40px;
+    border-radius: 18px;
+}
+
+.welcome-card h1 {
+    margin-top: 15px;
+    font-size: 32px;
+}
+
+.welcome-card p {
+    max-width: 600px;
+}
+
+.badge {
+    background: #b11226;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+/* SIDEBAR */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--verde-umb);
+    color: white;
+    padding: 20px;
+    transition: transform 0.3s ease;
+    z-index: 1000;
+}
+
+/* OCULTO POR DEFECTO */
+.dashboard.collapsed .sidebar {
+    transform: translateX(-100%);
+}
+
+/* MAIN */
+.main-content {
+    width: 100%;
+    padding: 20px 30px;
+}
+
+
+
+/* El contenido se expande */
+.dashboard.collapsed .main-content {
+    margin-left: 0;
+}
+
+/* Ajuste visual */
+.dashboard.collapsed .menu li i {
+    margin-right: 0;
+}
+.logout a {
+    color: #ffcccc;
+}
+
+.logout a:hover {
+    background: #8b0000;
+    color: white;
+}
+/* Overlay para cerrar menú */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.25);
+    z-index: 900;
+    display: none;
+}
+
+/* Mostrar overlay cuando el menú está abierto */
+.dashboard:not(.collapsed) ~ #overlay {
+    display: block;
+}
+/* ======================
+   BIENVENIDA ADMIN
+====================== */
+.welcome-hero {
+    position: relative;
+    height: 280px;
+    border-radius: 18px;
+    overflow: hidden;
+    background-image: url("/static/images/admin-bg.jpg"); /* tu imagen */
+    background-size: cover;
+    background-position: center;
+    margin-bottom: 2rem;
+}
+
+/* Overlay oscuro elegante */
+.welcome-overlay {
+    position: absolute;
+    inset: 0;
+    min-height: 340px;
+    border-radius: 0 0 24px 24px;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+    background-image: url("/static/images/umb1.jpg");
+    background-size: cover;
+    background-position: center;
+    
+}
+
+
+
+
+
+/* Contenido */
+.welcome-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    color: #fff;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 650px;
+}
+
+
+.welcome-content h1 {
+    font-size: 3.6rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+     white-space: nowrap;
+    color: #ffffff;
+}
+
+.welcome-content h1 strong {
+    color: #ffffff;
+}
+
+
+.welcome-content p {
+    font-size: 1.1rem;
+    line-height: 2.8;
+}
+
+
+/* Badge */
+.welcome-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+    width: fit-content;
+}
+
+.welcome-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    gap: 2rem;
+}
+
+.summary-wrapper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+}
+
+
+.summary-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    min-width: 180px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+.summary-card .icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.summary-card .icon.success {
+    background: #e6f4ea;
+    color: #198754;
+}
+
+.summary-card .icon.warning {
+    background: #fff4e5;
+    color: #fd7e14;
+}
+
+.summary-card h4 {
+    margin: 0;
+    font-weight: 700;
+}
+/* ======================
+   SECCIÓN CARRERAS
+====================== */
+
+.careers-section {
+    padding: 3rem 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.careers-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.careers-header h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.careers-header .view-all {
+    font-size: 0.9rem;
+    color: var(--verde-umb);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.careers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.8rem;
+}
+
+/* CARD */
+.career-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.career-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+}
+
+/* Imagen falsa (puedes cambiarla luego) */
+.career-image {
+    height: 160px;
+    background: linear-gradient(
+        135deg,
+        rgba(47,107,63,0.9),
+        rgba(36,85,48,0.9)
+    );
+}
+
+/* Contenido */
+.career-body {
+    padding: 1.25rem;
+}
+
+.career-tag {
+    display: inline-block;
+    background: #245530;
+    color: #fff;
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+}
+
+.career-body h5 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.career-body p {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+/* Footer */
+.career-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.graduates {
+    font-weight: 700;
+    color: var(--verde-umb);
+}
+
+.arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid #d1d5db;
+    display: grid;
+    place-items: center;
+    font-weight: bold;
+    color: var(--verde-umb);
+}
+
+/* ======================
+   RESPONSIVE
+====================== */
+
+@media (max-width: 768px) {
+    .careers-section {
+        padding: 2rem 1rem;
+    }
+
+    .careers-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
+.graduates-section {
+    margin-top: 3rem;
+    background: transparent;
+}
+
+.graduates-section h4 {
+    font-weight: 700;
+    padding-bottom: 2rem;
+}
+.graduates-full {
+    grid-column: 1 / -1;
+}
+.welcome-hero {
+    min-height: 340px;   /* puedes subirlo a 380 si quieres */
+    height: auto;
+    padding-bottom: 2rem;
+}
+
+.summary-wrapper > section {
+    width: 100%;
+}
+
+.view {
+    display: none;
+}
+
+.view.active {
+    display: block;
+}
+/* HERO */
+.welcome-hero {
+    padding: 3rem 2rem 4rem;
+    border-radius: 0 0 24px 24px;
+}
+
+/* Resumen */
+.summary-wrapper {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.summary-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
+    min-width: 220px;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.summary-wrapper {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+.welcome-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+.welcome-content {
+    max-width: 520px;
+}
+
+.summary-card {
+    min-width: 280px;
+    padding: 22px 26px;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+}
+
+@media (max-width: 992px) {
+    .summary-wrapper {
+        margin-left: 0;
+    }
+}
+.campus-bg {
+    position: relative;
+    background: linear-gradient(180deg, #d8ecd8 0%, #c5e3c6 100%);
+    padding: 4rem 2rem;
+    border-radius: 24px;
+    margin-top: 3rem;
+    min-height: 620px;
+    min-height: 620px;
+
+}
+
+/* Overlay claro institucional */
+.campus-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(245, 247, 249, 0.60);
+    z-index: 0;
+}
+
+/* Eleva el contenido */
+.campus-bg > * {
+    position: relative;
+    z-index: 1;
+}
+
+
+/* Graduados */
+.graduates-section {
+    margin-top: 2rem;
+}
+
+.career-img {
+    height: 150px;
+    object-fit: cover;
+}
+
+
+
+/* evita que la card crezca sin control */
+.career-card {
+    overflow: hidden;
+}
+/* ======================
+   GRADUADOS (AISLADO)
+====================== */
+.graduates-section .career-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.graduates-section .career-img {
+    height: 160px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.graduates-section .card-body {
+    flex-grow: 1;
+}
+
+/* ======================
+   FIX CERRAR SESIÓN
+====================== */
+.menu li.logout a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    padding: 12px 10px;
+    border-radius: 8px;
+
+    color: #ffcccc;
+    text-decoration: none;
+    width: 100%;
+}
+
+/* Hover igual al resto del menú */
+.menu li.logout a:hover {
+    background: #8b0000;
+    color: #ffffff;
+}
+
+/* Ícono */
+.menu li.logout i {
+    margin-right: 10px;
+}
+
+/* ===== MODAL LOGOUT CENTRADO ===== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+
+    background: rgba(0, 0, 0, 0.55);
+
+    display: none; /* se activa con JS */
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+/* =============================
+   FOOTER DASHBOARD ADMIN
+============================= */
+
+.dashboard-footer-wrapper {
+    margin-top: 80px;              /* separación del contenido */
+    padding: 60px 40px 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.dashboard-footer-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 1200px;
+    padding: 30px 28px;
+    border-radius: 20px;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+}
+
+/* Líneas */
+.dashboard-footer-card .footer-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    color: #374151;
+}
+
+/* Texto pequeño */
+.dashboard-footer-card .footer-small {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+/* Iconos */
+.dashboard-footer-card i {
+    color: #22c55e; /* verde institucional */
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-footer-wrapper {
+        padding: 40px 15px 30px;
+    }
+
+    .dashboard-footer-card .footer-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+/* Animación */
+@keyframes modalZoom {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+/* ======================
+   RESPONSIVE BIENVENIDA
+====================== */
+
+@media (max-width: 768px) {
+
+    .welcome-content {
+        padding: 1.5rem;
+        max-width: 100%;
+    }
+
+    .welcome-content h1 {
+        font-size: 2.2rem;
+        white-space: normal;   /* ✅ permite salto de línea */
+        line-height: 1.2;
+    }
+
+    .welcome-content p {
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .welcome-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
