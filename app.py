@@ -5,77 +5,33 @@ import logging
 from werkzeug.security import generate_password_hash, check_password_hash
 import os, uuid
 from werkzeug.utils import secure_filename
-import sys
 from datetime import datetime
 import urllib.parse
+import sys
 
-# Configuración de logging
+# Configuración básica de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'UMB-UES-dev-key-2025-segura')
 
-# ========== CONFIGURACIÓN DE BASE DE DATOS ==========
-
-def get_db_config():
-    """
-    Obtiene configuración de base de datos desde DATABASE_URL de Render
-    o usa configuración manual
-    """
-    database_url = os.environ.get('DATABASE_URL')
-    
-    if database_url:
-        # Render usa formato postgres://, psycopg2 necesita postgresql://
-        if database_url.startswith('postgres://'):
-            database_url = database_url.replace('postgres://', 'postgresql://', 1)
-        
-        # Parsear URL para obtener componentes
-        parsed = urllib.parse.urlparse(database_url)
-        
-        return {
-            'host': parsed.hostname,
-            'database': parsed.path[1:],  # Eliminar el '/' inicial
-            'user': parsed.username,
-            'password': parsed.password,
-            'port': parsed.port or 5432,
-            'sslmode': 'require'
-        }
-    else:
-        # Configuración manual - USA TUS CREDENCIALES CORRECTAS
-        return {
-            'host': 'dpg-d5kjdcnfte5s73cmmdu0-a',
-            'database': 'egresados_umb_db',
-            'user': 'egresados_umb_db_user',
-            'password': 'hHE0nFUU1jsz8stqhUGb3s4m2EQI4A82',
-            'port': 5432,
-            'sslmode': 'require'
-        }
+# ========== CONEXIÓN A POSTGRESQL ==========
 
 def conectar_db():
     """Conectar a PostgreSQL en Render"""
     try:
-        config = get_db_config()
-        
-        # Intentar conexión
+        # Configuración para Render - USA TUS CREDENCIALES ACTUALES
         conn = psycopg2.connect(
-            host=config['host'],
-            database=config['database'],
-            user=config['user'],
-            password=config['password'],
-            port=config['port'],
-            sslmode=config['sslmode']
+            host='dpg-d5kl39re5dus73acnoe0-a.oregon-postgres.render.com',
+            database='db_egresados_umb',
+            user='db_egresados_umb_user',
+            password='KvPkUmbrPMy8im2r9WB7aiedaddMAkEW',
+            port=5432,
+            sslmode='require'
         )
-        
-        print(f"✅ Conexión exitosa a PostgreSQL: {config['host']}")
         return conn
     except Exception as e:
         print(f"❌ Error al conectar a PostgreSQL: {e}")
-        logging.error(f"Error de conexión a PostgreSQL: {e}")
-        
-        # Para debugging en Render
-        config = get_db_config()
-        print(f"Configuración usada: host={config['host']}, db={config['database']}, user={config['user']}")
-        
         return None
 
 # ========== RUTAS PRINCIPALES ==========
@@ -85,6 +41,7 @@ def index():
     conn = conectar_db()
     if conn:
         conn.close()
+        print("✅ Conexión exitosa a PostgreSQL")
     return render_template('index.html')
 
 @app.route('/inicio')
@@ -129,7 +86,7 @@ def dashboard_admin():
             cursor.execute("SELECT COUNT(*) AS total FROM egresados")
             total_egresados = cursor.fetchone()['total']
 
-            # ÚLTIMA FECHA
+            # FECHA ACTUAL
             cursor.execute("SELECT TO_CHAR(CURRENT_DATE, 'DD Month, YYYY') AS fecha")
             ultima_fecha = cursor.fetchone()['fecha']
 
@@ -171,14 +128,13 @@ def login_admin():
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            sql = "SELECT * FROM coordinador WHERE numero_empleado = %s"
-            cursor.execute(sql, (username,))
+            sql = "SELECT * FROM coordinador WHERE numero_empleado = %s AND password = %s"
+            cursor.execute(sql, (username, password))
             user = cursor.fetchone()
             
-            if user and user['password'] == password:
+            if user:
                 session['useradmin'] = user['numero_empleado']
                 session['nombre'] = user['nombre_coordinador']
-                session['fotografia'] = user.get('fotografia', '')
                 return redirect(url_for('dashboard_admin'))
             else:
                 return redirect(url_for('index', error='usuario'))
@@ -199,11 +155,11 @@ def login_control():
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            sql = "SELECT * FROM control_escolar WHERE numero_empleado = %s"
-            cursor.execute(sql, (username,))
+            sql = "SELECT * FROM control_escolar WHERE numero_empleado = %s AND password = %s"
+            cursor.execute(sql, (username, password))
             user = cursor.fetchone()
             
-            if user and user['password'] == password:
+            if user:
                 session['usercontrol'] = user['numero_empleado']
                 session['nombre'] = f"{user['nombre_control']} {user['apellido_paterno']} {user['apellido_materno']}"
                 return redirect(url_for('dashboard_control_escolar'))
@@ -265,11 +221,11 @@ def login_egresado():
 
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            sql = "SELECT * FROM egresados WHERE matricula = %s"
-            cursor.execute(sql, (matricula,))
+            sql = "SELECT * FROM egresados WHERE matricula = %s AND password = %s"
+            cursor.execute(sql, (matricula, password))
             egresado = cursor.fetchone()
             
-            if egresado and egresado['password'] == password:
+            if egresado:
                 session['user_egresado'] = egresado['matricula']
                 session['nombre'] = f"{egresado['nombre_egresado']} {egresado['apellido_paterno']} {egresado['apellido_materno']}"
                 return redirect(url_for('dashboard_estudiante'))
@@ -303,7 +259,7 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-# ========== RUTAS API (AJAX) ==========
+# ========== RUTAS API ==========
 
 @app.route("/consulta_carrera")
 def consulta_carrera():
@@ -393,14 +349,13 @@ def registrar_egresado():
 
         matricula_segura = secure_filename(data['matricula']).strip()
         dir_fotos = os.path.join('static', 'uploads', 'egresados')
-        dir_foto = os.path.join('uploads', 'egresados')
         os.makedirs(dir_fotos, exist_ok=True)
         
         _, ext_foto = os.path.splitext(foto.filename)
         ext_foto = ext_foto.lower() or '.jpg'
         nombre_foto = f"{matricula_segura}{ext_foto}"
         ruta_foto = os.path.join(dir_fotos, nombre_foto)
-        ruta_foto_s = os.path.join(dir_foto, nombre_foto)
+        ruta_foto_s = f"uploads/egresados/{nombre_foto}"
         
         # Evitar duplicados
         if os.path.exists(ruta_foto):
@@ -409,37 +364,9 @@ def registrar_egresado():
             while os.path.exists(os.path.join(dir_fotos, f"{base}_{i}{ext}")):
                 i += 1
             ruta_foto = os.path.join(dir_fotos, f"{base}_{i}{ext}")
-            ruta_foto_s = os.path.join(dir_foto, f"{base}_{i}{ext}")
+            ruta_foto_s = f"uploads/egresados/{base}_{i}{ext}"
         
         foto.save(ruta_foto)
-
-        # Manejar documento de modalidad
-        modalidad = data.get('modalidad')
-        archivo_modalidad = None
-        
-        if modalidad in ('I', 'II', 'III', 'VI', 'VIII', 'XI'):
-            doc = files.get('archivo_modalidad')
-            if doc and doc.filename:
-                dir_docs = os.path.join('static', 'uploads', 'modalidades')
-                dir_doc = os.path.join('uploads', 'modalidades')
-                os.makedirs(dir_docs, exist_ok=True)
-                
-                _, ext_doc = os.path.splitext(doc.filename)
-                ext_doc = ext_doc.lower() or '.pdf'
-                nombre_doc = f"{matricula_segura}{ext_doc}"
-                ruta_doc = os.path.join(dir_docs, nombre_doc)
-                ruta_doc_s = os.path.join(dir_doc, nombre_doc)
-                
-                if os.path.exists(ruta_doc):
-                    base, ext = os.path.splitext(nombre_doc)
-                    i = 1
-                    while os.path.exists(os.path.join(dir_docs, f"{base}_{i}{ext}")):
-                        i += 1
-                    ruta_doc = os.path.join(dir_docs, f"{base}_{i}{ext}")
-                    ruta_doc_s = os.path.join(dir_doc, f"{base}_{i}{ext}")
-                
-                doc.save(ruta_doc)
-                archivo_modalidad = ruta_doc_s.replace('\\', '/')
 
         # Conectar a BD y registrar
         conn = conectar_db()
@@ -452,19 +379,18 @@ def registrar_egresado():
                 nombre_egresado, apellido_paterno, apellido_materno, genero, telefono, 
                 correo_electronico, ni, ne, estatus_laboral, estatus_titulacion, 
                 modalidad, matricula, generacion, password, id_carrera, perfil, 
-                id_ues, id_municipio, id_localidad, fotografia, documentos
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                id_ues, id_municipio, id_localidad, fotografia
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id_egresado
             """
             
             valores = (
                 data['nombre_egresado'], data['apellido_paterno'], data['apellido_materno'], data['genero'],
                 data['telefono'], data['correo_electronico'], data['ni'], data['ne'],
-                data['estatus_laboral'], data['estatus_titulacion'], modalidad,
-                data['matricula'], data['generacion'], data['password'],  # Contraseña sin hash temporal
+                data['estatus_laboral'], data['estatus_titulacion'], data.get('modalidad', ''),
+                data['matricula'], data['generacion'], data['password'],
                 data['id_carrera'], data['perfil'], data['id_ues'],
-                data['id_municipio'], data['id_localidad'],
-                ruta_foto_s.replace('\\', '/'), archivo_modalidad
+                data['id_municipio'], data['id_localidad'], ruta_foto_s
             )
             
             cursor.execute(sql, valores)
@@ -539,50 +465,20 @@ def actualizar_egresado():
             'id_localidad': request.form['id_localidad_ac']
         }
 
-        # Manejar foto
-        foto = request.files.get('fotografiaegr_ac')
-        ruta_foto_s = None
-
-        if foto and foto.filename:
-            matricula_segura = secure_filename(datos['matricula'])
-            dir_fotos = os.path.join('static', 'uploads', 'egresados')
-            dir_foto = os.path.join('uploads', 'egresados')
-            os.makedirs(dir_fotos, exist_ok=True)
-            
-            _, ext = os.path.splitext(foto.filename)
-            ext = ext.lower() or '.jpg'
-            nombre_foto = f"{matricula_segura}_{uuid.uuid4().hex[:8]}{ext}"
-            ruta_foto = os.path.join(dir_fotos, nombre_foto)
-            ruta_foto_s = os.path.join(dir_foto, nombre_foto)
-            
-            foto.save(ruta_foto)
-
         conn = conectar_db()
         if not conn:
             return jsonify({"success": False, "message": "No hay conexión a BD"}), 500
 
         with conn.cursor() as cursor:
-            if ruta_foto_s:
-                sql = """
-                    UPDATE egresados SET
-                        nombre_egresado=%s, apellido_paterno=%s, apellido_materno=%s, genero=%s,
-                        telefono=%s, correo_electronico=%s, ni=%s, ne=%s, generacion=%s,
-                        modalidad=%s, estatus_titulacion=%s, estatus_laboral=%s, perfil=%s,
-                        matricula=%s, id_carrera=%s, id_ues=%s, id_municipio=%s, id_localidad=%s,
-                        fotografia=%s
-                    WHERE id_egresado=%s
-                """
-                valores = list(datos.values()) + [ruta_foto_s, id_egresado]
-            else:
-                sql = """
-                    UPDATE egresados SET
-                        nombre_egresado=%s, apellido_paterno=%s, apellido_materno=%s, genero=%s,
-                        telefono=%s, correo_electronico=%s, ni=%s, ne=%s, generacion=%s,
-                        modalidad=%s, estatus_titulacion=%s, estatus_laboral=%s, perfil=%s,
-                        matricula=%s, id_carrera=%s, id_ues=%s, id_municipio=%s, id_localidad=%s
-                    WHERE id_egresado=%s
-                """
-                valores = list(datos.values()) + [id_egresado]
+            sql = """
+                UPDATE egresados SET
+                    nombre_egresado=%s, apellido_paterno=%s, apellido_materno=%s, genero=%s,
+                    telefono=%s, correo_electronico=%s, ni=%s, ne=%s, generacion=%s,
+                    modalidad=%s, estatus_titulacion=%s, estatus_laboral=%s, perfil=%s,
+                    matricula=%s, id_carrera=%s, id_ues=%s, id_municipio=%s, id_localidad=%s
+                WHERE id_egresado=%s
+            """
+            valores = list(datos.values()) + [id_egresado]
             
             cursor.execute(sql, valores)
             conn.commit()
@@ -664,56 +560,21 @@ def lista_carreras():
 def vista_estadisticas():
     return render_template("estadisticas_egresados.html")
 
-# ========== PÁGINA DE PRUEBA DE CONEXIÓN ==========
+# ========== PÁGINA DE PRUEBA ==========
 
-@app.route('/test_db')
-def test_db():
-    """Página para probar la conexión a la base de datos"""
+@app.route('/test')
+def test():
+    """Página simple para probar que la app funciona"""
     try:
         conn = conectar_db()
-        if not conn:
-            return "❌ No se pudo conectar a la base de datos"
-        
-        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-            # Tablas existentes
-            cursor.execute("""
-                SELECT table_name 
-                FROM information_schema.tables 
-                WHERE table_schema = 'public'
-                ORDER BY table_name
-            """)
-            tablas = cursor.fetchall()
-            
-            # Conteo de registros
-            cursor.execute("SELECT COUNT(*) as total FROM egresados")
-            total_egresados = cursor.fetchone()['total']
-            
-            cursor.execute("SELECT COUNT(*) as total FROM carreras")
-            total_carreras = cursor.fetchone()['total']
-            
-        conn.close()
-        
-        html = f"""
-        <h1>✅ Conexión a PostgreSQL Exitosa</h1>
-        <p><strong>Host:</strong> dpg-d5kjdcnfte5s73cmmdu0-a</p>
-        <p><strong>Base de datos:</strong> egresados_umb_db</p>
-        <hr>
-        <h2>Estadísticas:</h2>
-        <p>Total egresados: {total_egresados}</p>
-        <p>Total carreras: {total_carreras}</p>
-        <hr>
-        <h2>Tablas en la base de datos:</h2>
-        <ul>
-        """
-        
-        for tabla in tablas:
-            html += f"<li>{tabla['table_name']}</li>"
-        
-        html += "</ul>"
-        html += '<p><a href="/">Volver al inicio</a></p>'
-        
-        return html
-        
+        if conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM egresados")
+                count = cursor.fetchone()[0]
+            conn.close()
+            return f"✅ App funcionando. Egresados en BD: {count}"
+        else:
+            return "❌ Error conectando a BD"
     except Exception as e:
         return f"❌ Error: {str(e)}"
 
@@ -722,26 +583,9 @@ def test_db():
 if __name__ == '__main__':
     # Crear directorios necesarios
     os.makedirs('static/uploads/egresados', exist_ok=True)
-    os.makedirs('static/uploads/modalidades', exist_ok=True)
-    
-    # Probar conexión a la base de datos
-    print("🔄 Probando conexión a PostgreSQL...")
-    try:
-        conn = conectar_db()
-        if conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT COUNT(*) FROM egresados")
-                count = cursor.fetchone()[0]
-                print(f"✅ Base de datos conectada. Egresados: {count}")
-            conn.close()
-        else:
-            print("⚠️  No se pudo conectar a la base de datos")
-    except Exception as e:
-        print(f"⚠️  Error en conexión inicial: {e}")
     
     # Configurar puerto para Render
     port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
     print(f"🚀 Iniciando aplicación en puerto {port}")
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    app.run(host='0.0.0.0', port=port, debug=False)

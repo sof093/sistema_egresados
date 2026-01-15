@@ -6,9 +6,8 @@ services:
     startCommand: gunicorn app:app
     envVars:
       - key: DATABASE_URL
-        value: postgresql://egresados_umb_db_user:hHE0nFUU1jsz8stqhUGb3s4m2EQI4A82@dpg-d5kjdcnfte5s73cmmdu0-a:5432/egresados_umb_db
+        value: postgresql://db_egresados_umb_user:KvPkUmbrPMy8im2r9WB7aiedaddMAkEW@dpg-d5kl39re5dus73acnoe0-a.oregon-postgres.render.com/db_egresados_umb
       - key: SECRET_KEY
         value: umb-egresados-2025-clave-segura-12345
       - key: FLASK_DEBUG
         value: false
-    healthCheckPath: /test_db
