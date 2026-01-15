@@ -1,5 +1,4 @@
 from flask import Flask, Response, jsonify, render_template, request, redirect, session, url_for
-import pymysql
 import psycopg2
 import psycopg2.extras
 import logging
@@ -27,15 +26,14 @@ def conectar_db():
             host='dpg-d5kl39re5dus73acnoe0-a.oregon-postgres.render.com',
             user='db_egresados_umb_user',
             password='KvPkUmbrPMy8im2r9WB7aiedaddMAkEW',
-            db='db_egresados_umb',
+            database='db_egresados_umb',
             port=5432,
-            charset='utf8mb4',
-            sslmode = 'require',
-            cursorclass=pymysql.cursors.DictCursor
+            sslmode='require',
+            cursor_factory=psycopg2.extras.DictCursor
         )
         print("Conexión exitosa a la base de datos")
         return conexion
-    except pymysql.MySQLError as e:
+    except psycopg2.Error as e:
         print(f"Error al conectar a la base de datos: {e}")
         return None
 
@@ -93,13 +91,13 @@ def dashboard_admin():
             cursor.execute("SELECT COUNT(*) AS total FROM egresados")
             total_egresados = cursor.fetchone()["total"]
 
-            # ÚLTIMA FECHA
+            # ÚLTIMA FECHA (PostgreSQL)
             cursor.execute("""
-                SELECT DATE_FORMAT(CURDATE(), '%d %M, %Y') AS fecha
+                SELECT TO_CHAR(CURRENT_DATE, 'DD Month, YYYY') AS fecha
             """)
             ultima_fecha = cursor.fetchone()["fecha"]
 
-            # ✅ GRADUADOS POR CARRERA
+            # GRADUADOS POR CARRERA
             cursor.execute("""
                 SELECT 
                     c.id_carrera,
@@ -121,49 +119,8 @@ def dashboard_admin():
         'dashboard_admin.html',
         total_egresados=total_egresados,
         ultima_fecha=ultima_fecha,
-        carreras=carreras   # 🔥 ESTO ES LO QUE FALTABA
+        carreras=carreras
     )
-
-    if 'useradmin' not in session:
-        return redirect(url_for('index'))
-
-    conexion = conectar_db()
-    if not conexion:
-        return redirect(url_for('index'))
-
-    try:
-        with conexion.cursor() as cursor:
-
-            # 🔹 TOTAL DE EGRESADOS
-            cursor.execute("SELECT COUNT(*) AS total FROM egresados")
-            total_egresados = cursor.fetchone()["total"]
-
-            # 🔹 ÚLTIMA ACTUALIZACIÓN REAL
-            # (tomamos el último cambio en la tabla)
-            cursor.execute("""
-                SELECT MAX(id_egresado) AS ultimo
-                FROM egresados
-            """)
-            ultimo = cursor.fetchone()["ultimo"]
-
-            if ultimo:
-                cursor.execute("""
-                    SELECT DATE_FORMAT(CURDATE(), '%d %M, %Y') AS fecha
-                """)
-                ultima_fecha = cursor.fetchone()["fecha"]
-            else:
-                ultima_fecha = "Sin registros"
-
-    finally:
-        conexion.close()
-
-    return render_template(
-        'dashboard_admin.html',
-        total_egresados=total_egresados,
-        ultima_fecha=ultima_fecha
-    )
-
-    
 
 
 @app.route('/login_admin', methods=['POST'])
@@ -193,7 +150,6 @@ def login_admin():
         conexion.close()
 
 
-
 @app.route('/login_control', methods=['POST'])
 def login_control():
     username = request.form['useradmin']
@@ -214,7 +170,7 @@ def login_control():
             else:
                 return redirect(url_for('index', error='usuario'))
     except Exception as e:
-        print(f" Error en login_control: {e}")
+        print(f"Error en login_control: {e}")
         return redirect(url_for('index', error='db'))
     finally:
         conexion.close()
@@ -227,6 +183,7 @@ def dashboard_estudiante():
     else:
         return redirect(url_for('index'))
     
+
 @app.route('/login_egresado', methods=['POST'])
 def login_egresado():
     matricula = request.form['matricula']
@@ -252,6 +209,7 @@ def login_egresado():
     finally:
         conexion.close() 
 
+
 @app.route('/consulta_egresados')
 def consulta_egresados():
     conexion = conectar_db()
@@ -264,10 +222,12 @@ def consulta_egresados():
     else:
         return "Error al conectar la base de datos"
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
+
 
 @app.route("/consulta_carrera")
 def consulta_carrera():
@@ -275,12 +235,13 @@ def consulta_carrera():
     if not conexion:
         return jsonify({"error": "Error al conectar a la base de datos"}), 500
     try:
-        with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
+        with conexion.cursor() as cursor:
             cursor.execute("SELECT id_carrera, nombre_carrera FROM carreras")
             carreras = cursor.fetchall()
             return jsonify(carreras)
     finally:
         conexion.close()
+
 
 @app.route("/consulta_ues")
 def consulta_ues():
@@ -288,12 +249,13 @@ def consulta_ues():
     if not conexion:
         return jsonify({"error": "Error al conectar a la base de datos"}), 500
     try:
-        with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
+        with conexion.cursor() as cursor:
             cursor.execute("SELECT id_ues, nombre_ues FROM ues")
             ues = cursor.fetchall()
             return jsonify(ues)
     finally:
         conexion.close()
+
 
 @app.route("/consulta_municipio")
 def consulta_municipio():
@@ -301,19 +263,20 @@ def consulta_municipio():
     if not conexion:
         return jsonify({"error": "Error al conectar a la base de datos"}), 500
     try:
-        with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
+        with conexion.cursor() as cursor:
             cursor.execute("SELECT id_municipio, nombre_municipio FROM municipio")
             municipio = cursor.fetchall()
             return jsonify(municipio)
     finally:
         conexion.close()
 
+
 @app.route('/consulta_localidades/<int:id_municipio>')
 def consulta_localidades(id_municipio):
     conexion = conectar_db()
     if conexion:
         try:
-            with conexion.cursor(pymysql.cursors.DictCursor) as cursor:
+            with conexion.cursor() as cursor:
                 cursor.execute("""
                     SELECT id_localidad, nombre_localidad 
                     FROM localidades 
@@ -327,6 +290,7 @@ def consulta_localidades(id_municipio):
     else:
         return jsonify({'error': 'Error al conectar a la base de datos'}), 500
     
+
 @app.route('/registrar_egresado', methods=['POST'])
 def registrar_egresado():
     try:
@@ -398,7 +362,7 @@ def registrar_egresado():
 
         with conexion.cursor() as cursor:
 
-            # 1️⃣ INSERTAR EGRESADO
+            # INSERTAR EGRESADO
             sql = """
             INSERT INTO egresados (
                     nombre_egresado, apellido_paterno, apellido_materno, genero, telefono, coorreo_electronico,
@@ -420,16 +384,16 @@ def registrar_egresado():
                 ruta_foto_s, archivo_modalidad
             ))
 
-            conexion.commit()  # 👈 PRIMERO GUARDAS
+            conexion.commit()
 
-            # 2️⃣ BUSCAR CHAT_ID POR TELÉFONO
+            # BUSCAR CHAT_ID POR TELÉFONO
             cursor.execute(
                 "SELECT chat_id, nombre_egresado FROM egresados WHERE telefono=%s",
                 (data['telefono'],)
             )
             egresado = cursor.fetchone()
 
-            # 3️⃣ ENVIAR TELEGRAM (SI EXISTE)
+            # ENVIAR TELEGRAM (SI EXISTE)
             if egresado and egresado["chat_id"]:
                 enviar_telegram(
                     egresado["chat_id"],
@@ -443,6 +407,8 @@ def registrar_egresado():
     except Exception as e:
         logging.exception("Error en registrar_egresado")
         return jsonify({"success": False, "message": str(e)}), 500
+
+
 @app.route('/obtener_egresado/<int:id>', methods=['GET'])
 def obtener_egresado(id):
     conexion = conectar_db()
@@ -451,7 +417,6 @@ def obtener_egresado(id):
 
     try:
         with conexion.cursor() as cursor:
-            # Seleccionamos todo de egresados (e.*) y los nombres de las otras tablas
             sql = """
                 SELECT 
                     e.*, 
@@ -480,12 +445,12 @@ def obtener_egresado(id):
 
     finally:
         conexion.close()
+
+
 @app.route('/actualizar_egresado', methods=['POST'])
 def actualizar_egresado():
     try:
-        # =========================
-        # 1️⃣ DATOS DEL FORMULARIO
-        # =========================
+        # DATOS DEL FORMULARIO
         id_egresado = request.form['id_egresado']
 
         nombre = request.form['nombre_egresado_ac']
@@ -499,7 +464,7 @@ def actualizar_egresado():
         generacion = request.form['generacion_ac']
         modalidad = request.form['modalidad_ac']
         estatus_titulacion = request.form['estatus_titulacion_ac']
-        estatus_laboral=request.form['estatus_laboral_ac']
+        estatus_laboral = request.form['estatus_laboral_ac']
         perfil = request.form['perfil_ac']
         matricula = request.form['matricula_ac']
 
@@ -508,9 +473,7 @@ def actualizar_egresado():
         id_municipio = request.form['id_municipio_ac']
         id_localidad = request.form['id_localidad_ac']
 
-        # =========================
-        # 2️⃣ FOTO (SI SE SUBE)
-        # =========================
+        # FOTO (SI SE SUBE)
         foto = request.files.get('fotografiaegr_ac')
         ruta_foto_s = None
 
@@ -529,23 +492,16 @@ def actualizar_egresado():
             ruta_foto_s = os.path.join(dir_foto, nombre_foto)
 
             foto.save(ruta_foto)
-
             ruta_foto_s = ruta_foto_s.replace('\\', '/')
 
-            ruta_foto_s = ruta_foto_s.replace('\\', '/')
-
-        # =========================
-        # 3️⃣ BD
-        # =========================
+        # BASE DE DATOS
         conn = conectar_db()
         if not conn:
             return jsonify({"success": False, "message": "No hay conexión a BD"}), 500
 
         cursor = conn.cursor()
 
-        # =========================
-        # 4️⃣ UPDATE (con o sin foto)
-        # =========================
+        # UPDATE (con o sin foto)
         if ruta_foto_s:
             sql = """
                 UPDATE egresados SET
@@ -572,8 +528,8 @@ def actualizar_egresado():
             """
 
             valores = (
-                nombre, paterno, materno,genero, telefono, correo,
-                ni, ne, generacion, modalidad, estatus_titulacion,estatus_laboral,
+                nombre, paterno, materno, genero, telefono, correo,
+                ni, ne, generacion, modalidad, estatus_titulacion, estatus_laboral,
                 perfil, matricula,
                 id_carrera, id_ues, id_municipio, id_localidad,
                 ruta_foto_s,
@@ -604,8 +560,8 @@ def actualizar_egresado():
             """
 
             valores = (
-                nombre, paterno, materno, genero,telefono, correo,
-                ni, ne, generacion, modalidad, estatus_titulacion,estatus_laboral,
+                nombre, paterno, materno, genero, telefono, correo,
+                ni, ne, generacion, modalidad, estatus_titulacion, estatus_laboral,
                 perfil, matricula,
                 id_carrera, id_ues, id_municipio, id_localidad,
                 id_egresado
@@ -621,41 +577,6 @@ def actualizar_egresado():
         print("❌ Error al actualizar egresado:", e)
         return jsonify({"success": False, "message": str(e)}), 500
 
-@app.route('/actualizar_egresado_simple', methods=['POST'])
-def actualizar_egresado_simple():
-    try:
-        id = request.form['id_egresado_ac']
-        nombre = request.form['nombre_egresado_ac']
-        apellido_p = request.form['apellido_paterno_ac']
-        apellido_m = request.form['apellido_materno_ac']
-        genero= request.form['genero_ac']
-        telefono = request.form['telefono_ac']
-        correo = request.form['coorreo_electronico_ac']
-        generacion = request.form['generacion_ac']
-        modalidad = request.form['modalidad_ac']
-        
-        cursor = mysql.connection.cursor()
-
-        cursor.execute("""
-            UPDATE egresados SET
-                nombre_egresado=%s,
-                apellido_paterno=%s,
-                apellido_materno=%s,
-                genero=%s,
-                telefono=%s,
-                coorreo_electronico=%s,
-                generacion=%s,
-                modalidad=%s
-            WHERE id_egresado=%s
-        """, (nombre, apellido_p, apellido_m, genero,telefono, correo, generacion, modalidad, id))
-
-        mysql.connection.commit()
-
-        return jsonify(success=True)
-
-    except Exception as e:
-        return jsonify(success=False, message=str(e))
-    
 
 @app.route('/eliminar_egresado', methods=['POST'])
 def eliminar_egresado():
@@ -673,10 +594,10 @@ def eliminar_egresado():
 
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
-    #estadisticas 16-12-2025
+
+
 @app.route("/datos_estadisticas")
 def datos_estadisticas():
-
     estatus = request.args.get("estatus")
     carrera = request.args.get("carrera")
 
@@ -713,9 +634,9 @@ def datos_estadisticas():
     finally:
         conexion.close()
 
+
 @app.route("/lista_carreras")
 def lista_carreras():
-
     conexion = conectar_db()
     if not conexion:
         return jsonify([])
@@ -727,14 +648,14 @@ def lista_carreras():
     finally:
         conexion.close()
 
+
 @app.route("/vista_estadisticas")
 def vista_estadisticas():
     return render_template("estadisticas_egresados.html")
+
 
 if __name__ == '__main__':
     conexion = conectar_db()
     if conexion:
         conexion.close()
     app.run(debug=True, host='0.0.0.0', port=5000)
-
-

@@ -3,10 +3,9 @@ services:
     name: sistema-egresados-umb
     env: python
     buildCommand: |
-      python -c "import sys; print('Python version:', sys.version)"
       pip install --upgrade pip
       pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT  # ✅ Cambiado
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
