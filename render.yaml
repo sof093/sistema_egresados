@@ -2,12 +2,16 @@ services:
   - type: web
     name: sistema-egresados-umb
     env: python
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    buildCommand: |
+      python -c "import sys; print('Python version:', sys.version)"
+      pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
       - key: DATABASE_URL
         value: postgresql://db_egresados_umb_user:KvPkUmbrPMy8im2r9WB7aiedaddMAkEW@dpg-d5kl39re5dus73acnoe0-a.oregon-postgres.render.com/db_egresados_umb
       - key: SECRET_KEY
         value: umb-egresados-2025-clave-segura-12345
-      - key: FLASK_DEBUG
-        value: false
+    plan: free
