@@ -2,14 +2,13 @@ services:
   - type: web
     name: sistema-egresados-umb
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn app:app
     envVars:
-      - key: TELEGRAM_TOKEN
-        value: 8228079798:AAGQdTst1MuV3V1sV_4ApPphgEg7dzEHYac
+      - key: DATABASE_URL
+        value: postgresql://egresados_umb_db_user:hHE0nFUU1jsz8stqhUGb3s4m2EQI4A82@dpg-d5kjdcnfte5s73cmmdu0-a:5432/egresados_umb_db
       - key: SECRET_KEY
         value: umb-egresados-2025-clave-segura-12345
-      - key: DEBUG
-        sync: false
-      - key: DATABASE_URL
-        value: postgresql://egresados_umb_db_user:hHE0nFUU1jsz8stqhUGb3s4m2EQI4A82@dpg-d5kjdcnfte5s73cmmdu0-a/egresados_umb_db
+      - key: FLASK_DEBUG
+        value: false
+    healthCheckPath: /test_db

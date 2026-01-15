@@ -1,74 +1,100 @@
 from flask import Flask, Response, jsonify, render_template, request, redirect, session, url_for
-import psycopg2  # Cambiamos pymysql por psycopg2 para PostgreSQL
+import psycopg2
+import psycopg2.extras
 import logging
 from werkzeug.security import generate_password_hash, check_password_hash
 import os, uuid
 from werkzeug.utils import secure_filename
-from telegram import Bot
+import sys
 from datetime import datetime
-import ssl
-
-# Configuración de Telegram (si sigues usando)
-TELEGRAM_TOKEN = "8228079798:AAGQdTst1MuV3V1sV_4ApPphgEg7dzEHYac"
-telegram_bot = Bot(token=TELEGRAM_TOKEN) if TELEGRAM_TOKEN else None
-
-def enviar_telegram(chat_id, mensaje):
-    if chat_id and telegram_bot:
-        try:
-            telegram_bot.send_message(chat_id=chat_id, text=mensaje)
-        except Exception as e:
-            logging.error(f"Error enviando telegram: {e}")
-
-app = Flask(__name__)
-app.secret_key = 'UMB-UES'
+import urllib.parse
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Configuración de la base de datos PostgreSQL en Render
-DB_CONFIG = {
-    'host': 'dpg-d5kl39re5dus73acnoe0-a.oregon-postgres.render.com',
-    'database': 'db_egresados_umb',
-    'user': 'db_egresados_umb_user',
-    'password': 'KvPkUmbrPMy8im2r9WB7aiedaddMAkEW',
-    'port': 5432,
-    'sslmode': 'require'  # Render requiere SSL
-}
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'UMB-UES-dev-key-2025-segura')
+
+# ========== CONFIGURACIÓN DE BASE DE DATOS ==========
+
+def get_db_config():
+    """
+    Obtiene configuración de base de datos desde DATABASE_URL de Render
+    o usa configuración manual
+    """
+    database_url = os.environ.get('DATABASE_URL')
+    
+    if database_url:
+        # Render usa formato postgres://, psycopg2 necesita postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        
+        # Parsear URL para obtener componentes
+        parsed = urllib.parse.urlparse(database_url)
+        
+        return {
+            'host': parsed.hostname,
+            'database': parsed.path[1:],  # Eliminar el '/' inicial
+            'user': parsed.username,
+            'password': parsed.password,
+            'port': parsed.port or 5432,
+            'sslmode': 'require'
+        }
+    else:
+        # Configuración manual - USA TUS CREDENCIALES CORRECTAS
+        return {
+            'host': 'dpg-d5kjdcnfte5s73cmmdu0-a',
+            'database': 'egresados_umb_db',
+            'user': 'egresados_umb_db_user',
+            'password': 'hHE0nFUU1jsz8stqhUGb3s4m2EQI4A82',
+            'port': 5432,
+            'sslmode': 'require'
+        }
 
 def conectar_db():
     """Conectar a PostgreSQL en Render"""
     try:
-        # Cadena de conexión para PostgreSQL con SSL
+        config = get_db_config()
+        
+        # Intentar conexión
         conn = psycopg2.connect(
-            host=DB_CONFIG['host'],
-            database=DB_CONFIG['database'],
-            user=DB_CONFIG['user'],
-            password=DB_CONFIG['password'],
-            port=DB_CONFIG['port'],
-            sslmode=DB_CONFIG['sslmode']
+            host=config['host'],
+            database=config['database'],
+            user=config['user'],
+            password=config['password'],
+            port=config['port'],
+            sslmode=config['sslmode']
         )
-        print("✅ Conexión exitosa a PostgreSQL en Render")
+        
+        print(f"✅ Conexión exitosa a PostgreSQL: {config['host']}")
         return conn
     except Exception as e:
         print(f"❌ Error al conectar a PostgreSQL: {e}")
         logging.error(f"Error de conexión a PostgreSQL: {e}")
+        
+        # Para debugging en Render
+        config = get_db_config()
+        print(f"Configuración usada: host={config['host']}, db={config['database']}, user={config['user']}")
+        
         return None
+
+# ========== RUTAS PRINCIPALES ==========
 
 @app.route('/')
 def index():
-    conexion = conectar_db()
-    if conexion:
-        conexion.close()
+    conn = conectar_db()
+    if conn:
+        conn.close()
     return render_template('index.html')
 
 @app.route('/inicio')
 def inicio():
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return redirect(url_for('index'))
 
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("""
                 SELECT 
                     c.id_carrera,
@@ -86,26 +112,26 @@ def inicio():
         print(f"Error en /inicio: {e}")
         return redirect(url_for('index'))
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route('/admin')
 def dashboard_admin():
     if 'useradmin' not in session:
         return redirect(url_for('index'))
 
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return redirect(url_for('index'))
 
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             # TOTAL EGRESADOS
             cursor.execute("SELECT COUNT(*) AS total FROM egresados")
-            total_egresados = cursor.fetchone()[0]
+            total_egresados = cursor.fetchone()['total']
 
             # ÚLTIMA FECHA
             cursor.execute("SELECT TO_CHAR(CURRENT_DATE, 'DD Month, YYYY') AS fecha")
-            ultima_fecha = cursor.fetchone()[0]
+            ultima_fecha = cursor.fetchone()['fecha']
 
             # GRADUADOS POR CARRERA
             cursor.execute("""
@@ -132,25 +158,27 @@ def dashboard_admin():
         print(f"Error en dashboard_admin: {e}")
         return redirect(url_for('index'))
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route('/login_admin', methods=['POST'])
 def login_admin():
-    username = request.form['useradmin']
-    password = request.form['password_coordi'] 
-    conexion = conectar_db()
-    if not conexion:
+    username = request.form.get('useradmin', '')
+    password = request.form.get('password_coordi', '')
+    
+    conn = conectar_db()
+    if not conn:
         return redirect(url_for('index', error='db'))
 
     try:
-        with conexion.cursor() as cursor:
-            sql = "SELECT * FROM coordinador WHERE numero_empleado = %s AND password = %s"
-            cursor.execute(sql, (username, password))
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            sql = "SELECT * FROM coordinador WHERE numero_empleado = %s"
+            cursor.execute(sql, (username,))
             user = cursor.fetchone()
-            if user:
-                session['useradmin'] = user[4]  # numero_empleado (índice 4)
-                session['nombre'] = user[1]    # nombre_coordinador (índice 1)
-                session['fotografia'] = user[7]  # fotografia (índice 7)
+            
+            if user and user['password'] == password:
+                session['useradmin'] = user['numero_empleado']
+                session['nombre'] = user['nombre_coordinador']
+                session['fotografia'] = user.get('fotografia', '')
                 return redirect(url_for('dashboard_admin'))
             else:
                 return redirect(url_for('index', error='usuario'))
@@ -158,24 +186,26 @@ def login_admin():
         print(f"Error en login_admin: {e}")
         return redirect(url_for('index', error='db'))
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route('/login_control', methods=['POST'])
 def login_control():
-    username = request.form['useradmin']
-    password = request.form['password_control']
-    conexion = conectar_db()
-    if not conexion:
+    username = request.form.get('useradmin', '')
+    password = request.form.get('password_control', '')
+    
+    conn = conectar_db()
+    if not conn:
         return redirect(url_for('index', error='db'))
 
     try:
-        with conexion.cursor() as cursor:
-            sql = "SELECT * FROM control_escolar WHERE numero_empleado = %s AND password = %s"
-            cursor.execute(sql, (username, password))
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            sql = "SELECT * FROM control_escolar WHERE numero_empleado = %s"
+            cursor.execute(sql, (username,))
             user = cursor.fetchone()
-            if user:
-                session['usercontrol'] = user[4]  # numero_empleado
-                session['nombre'] = f"{user[1]} {user[2]} {user[3]}"  # nombre + apellidos
+            
+            if user and user['password'] == password:
+                session['usercontrol'] = user['numero_empleado']
+                session['nombre'] = f"{user['nombre_control']} {user['apellido_paterno']} {user['apellido_materno']}"
                 return redirect(url_for('dashboard_control_escolar'))
             else:
                 return redirect(url_for('index', error='usuario'))
@@ -183,126 +213,148 @@ def login_control():
         print(f"Error en login_control: {e}")
         return redirect(url_for('index', error='db'))
     finally:
-        conexion.close()
+        conn.close()
+
+@app.route('/dashboard_control_escolar')
+def dashboard_control_escolar():
+    if 'usercontrol' not in session:
+        return redirect(url_for('index'))
+    
+    conn = conectar_db()
+    if not conn:
+        return redirect(url_for('index'))
+    
+    try:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            cursor.execute("SELECT COUNT(*) AS total FROM egresados")
+            total_egresados = cursor.fetchone()['total']
+            
+            cursor.execute("SELECT COUNT(*) AS total FROM carreras")
+            total_carreras = cursor.fetchone()['total']
+            
+            cursor.execute("SELECT TO_CHAR(CURRENT_DATE, 'DD Month, YYYY') AS fecha")
+            ultima_fecha = cursor.fetchone()['fecha']
+        
+        return render_template(
+            'dashboard_control_escolar.html',
+            total_egresados=total_egresados,
+            total_carreras=total_carreras,
+            ultima_fecha=ultima_fecha
+        )
+    except Exception as e:
+        print(f"Error en dashboard_control_escolar: {e}")
+        return redirect(url_for('index'))
+    finally:
+        conn.close()
 
 @app.route('/dashboard_estudiante')
 def dashboard_estudiante():
     if 'user_egresado' in session:
-        return render_template('dashboard_estudiante.html', nombre=session['nombre'])
+        return render_template('dashboard_estudiante.html', nombre=session.get('nombre', ''))
     else:
         return redirect(url_for('index'))
 
 @app.route('/login_egresado', methods=['POST'])
 def login_egresado():
-    matricula = request.form['matricula']
-    password = request.form['password']
-    conexion = conectar_db()
-    if not conexion:
+    matricula = request.form.get('matricula', '')
+    password = request.form.get('password', '')
+    
+    conn = conectar_db()
+    if not conn:
         return redirect(url_for('index', error='db'))
 
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             sql = "SELECT * FROM egresados WHERE matricula = %s"
             cursor.execute(sql, (matricula,))
             egresado = cursor.fetchone()
             
-            if egresado:
-                # Verificar contraseña (ya está encriptada con scrypt en la BD)
-                stored_password = egresado[17]  # password (índice 17)
-                # Si la contraseña está en texto plano (temporal)
-                if password == stored_password or check_password_hash(stored_password, password):
-                    session['user_egresado'] = egresado[15]  # matricula
-                    session['nombre'] = f"{egresado[1]} {egresado[2]} {egresado[3]}"  # nombre + apellidos
-                    return redirect(url_for('dashboard_estudiante'))
+            if egresado and egresado['password'] == password:
+                session['user_egresado'] = egresado['matricula']
+                session['nombre'] = f"{egresado['nombre_egresado']} {egresado['apellido_paterno']} {egresado['apellido_materno']}"
+                return redirect(url_for('dashboard_estudiante'))
             
             return redirect(url_for('index', error='usuario'))
     except Exception as e:
         print(f"Error en login_egresado: {e}")
         return redirect(url_for('index', error='db'))
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route('/consulta_egresados')
 def consulta_egresados():
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return "Error al conectar la base de datos"
 
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             sql = "SELECT * FROM egresados ORDER BY id_egresado"
             cursor.execute(sql)
             egresados = cursor.fetchall()
-            
-            # Convertir a lista de diccionarios para mejor manejo en templates
-            columns = [desc[0] for desc in cursor.description]
-            egresados_dict = [dict(zip(columns, row)) for row in egresados]
-            
-            return render_template('consulta_egresados.html', egresados=egresados_dict)
+            return render_template('consulta_egresados.html', egresados=egresados)
+    except Exception as e:
+        return f"Error: {e}"
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
 
+# ========== RUTAS API (AJAX) ==========
+
 @app.route("/consulta_carrera")
 def consulta_carrera():
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return jsonify({"error": "Error al conectar a la base de datos"}), 500
     
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("SELECT id_carrera, nombre_carrera FROM carreras ORDER BY nombre_carrera")
             carreras = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            carreras_dict = [dict(zip(columns, row)) for row in carreras]
-            return jsonify(carreras_dict)
+            return jsonify([dict(carrera) for carrera in carreras])
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route("/consulta_ues")
 def consulta_ues():
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return jsonify({"error": "Error al conectar a la base de datos"}), 500
     
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("SELECT id_ues, nombre_ues FROM ues ORDER BY nombre_ues")
             ues = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            ues_dict = [dict(zip(columns, row)) for row in ues]
-            return jsonify(ues_dict)
+            return jsonify([dict(u) for u in ues])
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route("/consulta_municipio")
 def consulta_municipio():
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return jsonify({"error": "Error al conectar a la base de datos"}), 500
     
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("SELECT id_municipio, nombre_municipio FROM municipio ORDER BY nombre_municipio")
             municipios = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            municipios_dict = [dict(zip(columns, row)) for row in municipios]
-            return jsonify(municipios_dict)
+            return jsonify([dict(m) for m in municipios])
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route('/consulta_localidades/<int:id_municipio>')
 def consulta_localidades(id_municipio):
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return jsonify({'error': 'Error al conectar a la base de datos'}), 500
     
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("""
                 SELECT id_localidad, nombre_localidad 
                 FROM localidades 
@@ -310,11 +362,11 @@ def consulta_localidades(id_municipio):
                 ORDER BY nombre_localidad ASC
             """, (id_municipio,))
             localidades = cursor.fetchall()
-            columns = [desc[0] for desc in cursor.description]
-            localidades_dict = [dict(zip(columns, row)) for row in localidades]
-            return jsonify(localidades_dict)
+            return jsonify([dict(l) for l in localidades])
     finally:
-        conexion.close()
+        conn.close()
+
+# ========== CRUD EGRESADOS ==========
 
 @app.route('/registrar_egresado', methods=['POST'])
 def registrar_egresado():
@@ -322,18 +374,19 @@ def registrar_egresado():
         data = request.form
         files = request.files
 
-        campos = [
-            'nombre_egresado', 'apellido_paterno', 'apellido_materno', 'genero','telefono', 'correo_electronico',
-            'ni', 'ne', 'estatus_laboral', 'estatus_titulacion', 'matricula',
-            'generacion', 'password', 'id_carrera', 'perfil',
-            'id_ues', 'id_municipio', 'id_localidad'
+        # Validar campos requeridos
+        campos_requeridos = [
+            'nombre_egresado', 'apellido_paterno', 'apellido_materno', 'genero',
+            'telefono', 'correo_electronico', 'ni', 'ne', 'estatus_laboral',
+            'estatus_titulacion', 'matricula', 'generacion', 'password',
+            'id_carrera', 'perfil', 'id_ues', 'id_municipio', 'id_localidad'
         ]
 
-        for campo in campos:
+        for campo in campos_requeridos:
             if not data.get(campo):
                 return jsonify({"success": False, "message": f"Falta el campo {campo}"}), 400
 
-        password_hash = generate_password_hash(data['password'])
+        # Manejar fotografía
         foto = files.get('fotografiaegr')
         if not foto or foto.filename == '':
             return jsonify({"success": False, "message": "Debe subir una fotografía"}), 400
@@ -342,12 +395,14 @@ def registrar_egresado():
         dir_fotos = os.path.join('static', 'uploads', 'egresados')
         dir_foto = os.path.join('uploads', 'egresados')
         os.makedirs(dir_fotos, exist_ok=True)
+        
         _, ext_foto = os.path.splitext(foto.filename)
         ext_foto = ext_foto.lower() or '.jpg'
         nombre_foto = f"{matricula_segura}{ext_foto}"
         ruta_foto = os.path.join(dir_fotos, nombre_foto)
         ruta_foto_s = os.path.join(dir_foto, nombre_foto)
         
+        # Evitar duplicados
         if os.path.exists(ruta_foto):
             base, ext = os.path.splitext(nombre_foto)
             i = 1
@@ -357,16 +412,18 @@ def registrar_egresado():
             ruta_foto_s = os.path.join(dir_foto, f"{base}_{i}{ext}")
         
         foto.save(ruta_foto)
-        ruta_foto_s = ruta_foto_s.replace('\\', '/')
 
+        # Manejar documento de modalidad
         modalidad = data.get('modalidad')
         archivo_modalidad = None
+        
         if modalidad in ('I', 'II', 'III', 'VI', 'VIII', 'XI'):
             doc = files.get('archivo_modalidad')
             if doc and doc.filename:
                 dir_docs = os.path.join('static', 'uploads', 'modalidades')
                 dir_doc = os.path.join('uploads', 'modalidades')
                 os.makedirs(dir_docs, exist_ok=True)
+                
                 _, ext_doc = os.path.splitext(doc.filename)
                 ext_doc = ext_doc.lower() or '.pdf'
                 nombre_doc = f"{matricula_segura}{ext_doc}"
@@ -384,42 +441,35 @@ def registrar_egresado():
                 doc.save(ruta_doc)
                 archivo_modalidad = ruta_doc_s.replace('\\', '/')
 
-        conexion = conectar_db()
-        if not conexion:
+        # Conectar a BD y registrar
+        conn = conectar_db()
+        if not conn:
             return jsonify({"success": False, "message": "No se pudo conectar a la base de datos"}), 500
 
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             sql = """
             INSERT INTO egresados (
-                nombre_egresado, apellido_paterno, apellido_materno, genero, telefono, correo_electronico,
-                ni, ne, estatus_laboral, estatus_titulacion, modalidad, matricula, generacion, password,
-                id_carrera, perfil, id_ues, id_municipio, id_localidad, fotografia, documentos, chat_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                nombre_egresado, apellido_paterno, apellido_materno, genero, telefono, 
+                correo_electronico, ni, ne, estatus_laboral, estatus_titulacion, 
+                modalidad, matricula, generacion, password, id_carrera, perfil, 
+                id_ues, id_municipio, id_localidad, fotografia, documentos
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id_egresado
             """
             
-            cursor.execute(sql, (
+            valores = (
                 data['nombre_egresado'], data['apellido_paterno'], data['apellido_materno'], data['genero'],
                 data['telefono'], data['correo_electronico'], data['ni'], data['ne'],
                 data['estatus_laboral'], data['estatus_titulacion'], modalidad,
-                data['matricula'], data['generacion'], password_hash,
+                data['matricula'], data['generacion'], data['password'],  # Contraseña sin hash temporal
                 data['id_carrera'], data['perfil'], data['id_ues'],
                 data['id_municipio'], data['id_localidad'],
-                ruta_foto_s, archivo_modalidad, data.get('chat_id', '')
-            ))
+                ruta_foto_s.replace('\\', '/'), archivo_modalidad
+            )
             
-            nuevo_id = cursor.fetchone()[0]
-            conexion.commit()
-
-            # Enviar telegram si hay chat_id
-            chat_id = data.get('chat_id')
-            if chat_id:
-                enviar_telegram(
-                    chat_id,
-                    f"🟢 Hola {data['nombre_egresado']}\n"
-                    "El sistema ha detectado tu registro.\n"
-                    "Tu cuenta ya está activa y en línea."
-                )
+            cursor.execute(sql, valores)
+            nuevo_id = cursor.fetchone()['id_egresado']
+            conn.commit()
         
         return jsonify({"success": True, "message": "Registro exitoso", "id": nuevo_id})
 
@@ -429,12 +479,12 @@ def registrar_egresado():
 
 @app.route('/obtener_egresado/<int:id>', methods=['GET'])
 def obtener_egresado(id):
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return jsonify({"error": "No hay conexión a BD"}), 500
 
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             sql = """
                 SELECT 
                     e.*, 
@@ -455,23 +505,19 @@ def obtener_egresado(id):
             if not egresado:
                 return jsonify({"error": "Egresado no encontrado"}), 404
             
-            # Convertir a diccionario
-            columns = [desc[0] for desc in cursor.description]
-            egresado_dict = dict(zip(columns, egresado))
-            
-            return jsonify(egresado_dict)
+            return jsonify(dict(egresado))
     except Exception as e:
         print("Error interno:", e)
         return jsonify({"error": "Error interno"}), 500
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route('/actualizar_egresado', methods=['POST'])
 def actualizar_egresado():
     try:
         id_egresado = request.form['id_egresado']
         
-        # Obtener datos del formulario
+        # Obtener datos
         datos = {
             'nombre': request.form['nombre_egresado_ac'],
             'paterno': request.form['apellido_paterno_ac'],
@@ -505,18 +551,17 @@ def actualizar_egresado():
             
             _, ext = os.path.splitext(foto.filename)
             ext = ext.lower() or '.jpg'
-            nombre_foto = f"{matricula_segura}_{uuid.uuid4().hex}{ext}"
+            nombre_foto = f"{matricula_segura}_{uuid.uuid4().hex[:8]}{ext}"
             ruta_foto = os.path.join(dir_fotos, nombre_foto)
             ruta_foto_s = os.path.join(dir_foto, nombre_foto)
             
             foto.save(ruta_foto)
-            ruta_foto_s = ruta_foto_s.replace('\\', '/')
 
-        conexion = conectar_db()
-        if not conexion:
+        conn = conectar_db()
+        if not conn:
             return jsonify({"success": False, "message": "No hay conexión a BD"}), 500
 
-        with conexion.cursor() as cursor:
+        with conn.cursor() as cursor:
             if ruta_foto_s:
                 sql = """
                     UPDATE egresados SET
@@ -540,7 +585,7 @@ def actualizar_egresado():
                 valores = list(datos.values()) + [id_egresado]
             
             cursor.execute(sql, valores)
-            conexion.commit()
+            conn.commit()
         
         return jsonify({"success": True})
     except Exception as e:
@@ -552,30 +597,32 @@ def eliminar_egresado():
     try:
         id_egresado = request.form.get("id_egresado")
         
-        conexion = conectar_db()
-        if not conexion:
+        conn = conectar_db()
+        if not conn:
             return jsonify({"success": False, "message": "No hay conexión a BD"}), 500
         
-        with conexion.cursor() as cursor:
+        with conn.cursor() as cursor:
             sql = "DELETE FROM egresados WHERE id_egresado = %s"
             cursor.execute(sql, (id_egresado,))
-            conexion.commit()
+            conn.commit()
         
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+
+# ========== ESTADÍSTICAS ==========
 
 @app.route("/datos_estadisticas")
 def datos_estadisticas():
     estatus = request.args.get("estatus")
     carrera = request.args.get("carrera")
     
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return jsonify([])
     
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             query = """
                 SELECT estatus_titulacion, COUNT(*) AS total
                 FROM egresados
@@ -594,66 +641,83 @@ def datos_estadisticas():
             query += " GROUP BY estatus_titulacion"
             cursor.execute(query, params)
             
-            # Convertir a diccionario
-            columns = [desc[0] for desc in cursor.description]
-            data = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            
-            return jsonify(data)
+            data = cursor.fetchall()
+            return jsonify([dict(d) for d in data])
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route("/lista_carreras")
 def lista_carreras():
-    conexion = conectar_db()
-    if not conexion:
+    conn = conectar_db()
+    if not conn:
         return jsonify([])
     
     try:
-        with conexion.cursor() as cursor:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
             cursor.execute("SELECT id_carrera, nombre_carrera FROM carreras ORDER BY nombre_carrera")
-            columns = [desc[0] for desc in cursor.description]
-            carreras = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            return jsonify(carreras)
+            carreras = cursor.fetchall()
+            return jsonify([dict(c) for c in carreras])
     finally:
-        conexion.close()
+        conn.close()
 
 @app.route("/vista_estadisticas")
 def vista_estadisticas():
     return render_template("estadisticas_egresados.html")
 
-# Ruta faltante para dashboard_control_escolar
-@app.route('/dashboard_control_escolar')
-def dashboard_control_escolar():
-    if 'usercontrol' not in session:
-        return redirect(url_for('index'))
-    
-    conexion = conectar_db()
-    if not conexion:
-        return redirect(url_for('index'))
-    
+# ========== PÁGINA DE PRUEBA DE CONEXIÓN ==========
+
+@app.route('/test_db')
+def test_db():
+    """Página para probar la conexión a la base de datos"""
     try:
-        with conexion.cursor() as cursor:
-            # Estadísticas básicas
-            cursor.execute("SELECT COUNT(*) AS total FROM egresados")
-            total_egresados = cursor.fetchone()[0]
-            
-            cursor.execute("SELECT COUNT(*) AS total FROM carreras")
-            total_carreras = cursor.fetchone()[0]
-            
-            cursor.execute("SELECT TO_CHAR(CURRENT_DATE, 'DD Month, YYYY') AS fecha")
-            ultima_fecha = cursor.fetchone()[0]
+        conn = conectar_db()
+        if not conn:
+            return "❌ No se pudo conectar a la base de datos"
         
-        return render_template(
-            'dashboard_control_escolar.html',
-            total_egresados=total_egresados,
-            total_carreras=total_carreras,
-            ultima_fecha=ultima_fecha
-        )
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+            # Tablas existentes
+            cursor.execute("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+                ORDER BY table_name
+            """)
+            tablas = cursor.fetchall()
+            
+            # Conteo de registros
+            cursor.execute("SELECT COUNT(*) as total FROM egresados")
+            total_egresados = cursor.fetchone()['total']
+            
+            cursor.execute("SELECT COUNT(*) as total FROM carreras")
+            total_carreras = cursor.fetchone()['total']
+            
+        conn.close()
+        
+        html = f"""
+        <h1>✅ Conexión a PostgreSQL Exitosa</h1>
+        <p><strong>Host:</strong> dpg-d5kjdcnfte5s73cmmdu0-a</p>
+        <p><strong>Base de datos:</strong> egresados_umb_db</p>
+        <hr>
+        <h2>Estadísticas:</h2>
+        <p>Total egresados: {total_egresados}</p>
+        <p>Total carreras: {total_carreras}</p>
+        <hr>
+        <h2>Tablas en la base de datos:</h2>
+        <ul>
+        """
+        
+        for tabla in tablas:
+            html += f"<li>{tabla['table_name']}</li>"
+        
+        html += "</ul>"
+        html += '<p><a href="/">Volver al inicio</a></p>'
+        
+        return html
+        
     except Exception as e:
-        print(f"Error en dashboard_control_escolar: {e}")
-        return redirect(url_for('index'))
-    finally:
-        conexion.close()
+        return f"❌ Error: {str(e)}"
+
+# ========== INICIALIZACIÓN ==========
 
 if __name__ == '__main__':
     # Crear directorios necesarios
@@ -661,13 +725,23 @@ if __name__ == '__main__':
     os.makedirs('static/uploads/modalidades', exist_ok=True)
     
     # Probar conexión a la base de datos
-    conn = conectar_db()
-    if conn:
-        print("✅ Base de datos PostgreSQL conectada exitosamente")
-        conn.close()
-    else:
-        print("⚠️  Advertencia: No se pudo conectar a la base de datos")
+    print("🔄 Probando conexión a PostgreSQL...")
+    try:
+        conn = conectar_db()
+        if conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM egresados")
+                count = cursor.fetchone()[0]
+                print(f"✅ Base de datos conectada. Egresados: {count}")
+            conn.close()
+        else:
+            print("⚠️  No se pudo conectar a la base de datos")
+    except Exception as e:
+        print(f"⚠️  Error en conexión inicial: {e}")
     
-    # Ejecutar la aplicación
+    # Configurar puerto para Render
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    print(f"🚀 Iniciando aplicación en puerto {port}")
+    app.run(host='0.0.0.0', port=port, debug=debug)
